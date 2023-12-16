@@ -6,6 +6,7 @@ import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../controllers/content_controller.dart';
 import '../../modals/page_content.dart';
+import '../../widgets/components/video/thumbnail.dart';
 import '../add_server.func.dart';
 import '../home_page.dart';
 
@@ -27,13 +28,15 @@ class HomePageMobile extends ConsumerWidget {
             ref.read(selectedIndexStateProvvider.notifier).update((state) => index);
             String url = ref.watch(serverListStateProvider)[index];
 
-            LoadingScreen(context).show();
-            ref.read(contentControllerProvider).selectServer(url);
-            ref
-                .read(contentControllerProvider)
-                .getPageContent()
-                .then((_) => ToastDialog(context).show(type: ToastType.success, text: 'Connected', extent: true))
-                .catchError((err, st) => ToastDialog(context).show(type: ToastType.error, text: err));
+            if (ref.read(httpServerStateProvider).url != url) {
+              LoadingScreen(context).show();
+              ref.read(contentControllerProvider).selectServer(url);
+              ref
+                  .read(contentControllerProvider)
+                  .getPageContent()
+                  .then((_) => ToastDialog(context).show(type: ToastType.success, text: 'Connected', extent: true))
+                  .catchError((err, st) => ToastDialog(context).show(type: ToastType.error, text: err));
+            }
           },
           children: [
             ListTile(
@@ -158,7 +161,9 @@ class PageContentSection extends ConsumerWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.play_circle),
+                            const Icon(
+                              Icons.play_circle,
+                            ),
                             Text(
                               ref.watch(videosContentStateProvider).isEmpty ? '-' : '${ref.watch(videosContentStateProvider).length}',
                             ).pl(5),
@@ -204,24 +209,33 @@ class PageContentSection extends ConsumerWidget {
   }
 }
 
-class ContentsTabView extends ConsumerWidget {
+class ContentsTabView extends ConsumerStatefulWidget {
   final StateProvider<List<FileElement>> contentStateProvider;
   const ContentsTabView(this.contentStateProvider, {super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ContentsTabView> createState() => _ContentsTabViewState();
+}
+
+class _ContentsTabViewState extends ConsumerState<ContentsTabView> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
     return MediaQuery.removePadding(
       context: context,
       child: Scrollbar(
         child: GridView.builder(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, 
+            crossAxisCount: 2,
             crossAxisSpacing: 8.0,
             mainAxisSpacing: 8.0,
           ),
-          itemCount: ref.watch(contentStateProvider).length,
+          itemCount: ref.watch(widget.contentStateProvider).length,
           itemBuilder: (BuildContext context, int index) {
-            final file = ref.watch(contentStateProvider)[index];
+            final file = ref.watch(widget.contentStateProvider)[index];
             return FileCard(file.filename);
           },
         ).px(10).pt(8),
@@ -230,15 +244,25 @@ class ContentsTabView extends ConsumerWidget {
   }
 }
 
-class FileCard extends StatelessWidget {
+class FileCard extends ConsumerWidget {
   final String filename;
   const FileCard(this.filename, {super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       shadowColor: Colors.transparent,
-      child: Text(filename),
+      child: Column(
+        children: [
+          VideoThumbnail(
+            vidUrl: '${ref.watch(httpServerStateProvider).url}/$filename',
+          ),
+          Text(
+            filename,
+            maxLines: 2,
+          ).pa(15),
+        ],
+      ),
     );
   }
 }

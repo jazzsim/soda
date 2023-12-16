@@ -16,7 +16,7 @@ final serverListStateProvider = StateProvider<List<String>>((ref) {
     final server = HttpServer.fromRawJson(s);
     urls.add(server.url);
   }
-  
+
   return urls;
 });
 
