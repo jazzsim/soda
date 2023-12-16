@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/controllers/content_controller.dart';
-import 'package:soda/pages/add_server.func.dart';
 import 'package:soda/widgets/components/dialogs/loading_dialog.dart';
 import 'package:soda/widgets/components/primary_button.dart';
 import 'package:soda/widgets/components/text_button.dart';

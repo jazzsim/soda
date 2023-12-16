@@ -30,11 +30,13 @@ class HomePageMobile extends ConsumerWidget {
 
             if (ref.read(httpServerStateProvider).url != url) {
               LoadingScreen(context).show();
-              ref.read(contentControllerProvider).selectServer(url);
+              String serverOrigin = ref.read(contentControllerProvider).selectServer(url);
+              ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverOrigin));
+
               ref
                   .read(contentControllerProvider)
                   .getPageContent()
-                  .then((_) => ToastDialog(context).show(type: ToastType.success, text: 'Connected', extent: true))
+                  .then((_) => ToastDialog(context).show(type: ToastType.success, text: 'Connected'))
                   .catchError((err, st) => ToastDialog(context).show(type: ToastType.error, text: err));
             }
           },
@@ -88,7 +90,7 @@ class PageContentSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scrollController = ScrollController();
+    final folderScrollController = ScrollController();
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
@@ -101,110 +103,141 @@ class PageContentSection extends ConsumerWidget {
           context: context,
           removeBottom: true,
           child: Scrollbar(
-            controller: scrollController,
+            controller: folderScrollController,
             thumbVisibility: true,
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Wrap(
-                children: ref.watch(pageContentStateProvider).folders.map(
-                  (String folder) {
-                    return SizedBox(
-                      width: MediaQuery.of(context).size.width / 2.11,
-                      child: Card(
-                        shadowColor: Colors.transparent,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.folder,
-                              color: Color.fromARGB(255, 117, 117, 117),
-                            ).pltrb(10, 8, 5, 8),
-                            Text(folder).pltrb(5, 8, 0, 8),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ).toList(),
+            child: GridView.builder(
+              controller: folderScrollController,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                childAspectRatio: 3,
+                crossAxisCount: 3, // Adjust the number of columns as needed
+                crossAxisSpacing: 8.0, // Adjust the spacing between columns
+                mainAxisSpacing: 8.0, // Adjust the spacing between rows
               ),
-            ).px(10),
+              itemCount: ref.watch(pageContentStateProvider).folders.length, // Replace with the actual number of items in your list
+              itemBuilder: (BuildContext context, int index) {
+                final folder = ref.watch(pageContentStateProvider).folders[index];
+                return GestureDetector(
+                  onTap: () {
+                    LoadingScreen(context).show();
+                    if (folder == '../') {
+                      Uri uri = ref.read(contentControllerProvider).handleReverse();
+                      ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: uri.origin));
+                      ref.read(pathStateProvider.notifier).update((state) => "${uri.path}/");
+                    } else {
+                      ref.watch(pathStateProvider.notifier).update((state) => '$state$folder');
+                    }
+                    ref.read(contentControllerProvider).getPageContent().then((value) {
+                      LoadingScreen(context).hide();
+                    }).catchError((err, st) {
+                      ToastDialog(context).show(type: ToastType.error, text: err);
+                    });
+                  },
+                  child: Card(
+                    shadowColor: Colors.transparent,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.folder,
+                          color: Color.fromARGB(255, 117, 117, 117),
+                        ).pltrb(10, 0, 5, 0),
+                        Expanded(
+                          child: OverflowBox(
+                            child: Text(
+                              folder,
+                              overflow: TextOverflow.ellipsis,
+                            ).pl(5),
+                          ),
+                        ),
+                      ],
+                    ).py(8),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
-      Text(
-        'Files',
-        style: Theme.of(context).textTheme.titleMedium,
-      ).pa(10).pt(10),
-      ref.watch(pageContentStateProvider).files.isEmpty
-          ? const Center(
-              child: Text('No files found'),
-            )
-          : Expanded(
-              flex: 8,
-              child: DefaultTabController(
-                length: 4,
-                child: Column(children: [
-                  TabBar(
-                    tabs: <Widget>[
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.image),
-                            Text(
-                              ref.watch(imagesContentStateProvider).isEmpty ? '-' : '${ref.watch(imagesContentStateProvider).length}',
-                            ).pl(5),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.play_circle,
-                            ),
-                            Text(
-                              ref.watch(videosContentStateProvider).isEmpty ? '-' : '${ref.watch(videosContentStateProvider).length}',
-                            ).pl(5),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.description),
-                            Text(
-                              ref.watch(documentsContentStateProvider).isEmpty ? '-' : '${ref.watch(documentsContentStateProvider).length}',
-                            ).pl(5),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.quiz),
-                            Text(
-                              ref.watch(othersContentStateProvider).isEmpty ? '-' : '${ref.watch(othersContentStateProvider).length}',
-                            ).pl(5),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  Expanded(
-                    child: TabBarView(children: [
-                      ContentsTabView(imagesContentStateProvider),
-                      ContentsTabView(videosContentStateProvider),
-                      ContentsTabView(documentsContentStateProvider),
-                      ContentsTabView(othersContentStateProvider),
-                    ]),
-                  ),
-                ]),
+      if (ref.watch(pageContentStateProvider).files.isNotEmpty)
+        Expanded(
+          flex: 8,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: Text(
+                  'Files',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ).pltrb(10, 20, 10, 10),
               ),
-            )
+              Flexible(
+                child: DefaultTabController(
+                  length: 4,
+                  child: Column(children: [
+                    TabBar(
+                      tabs: <Widget>[
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.image),
+                              Text(
+                                ref.watch(imagesContentStateProvider).isEmpty ? '-' : '${ref.watch(imagesContentStateProvider).length}',
+                              ).pl(5),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.play_circle,
+                              ),
+                              Text(
+                                ref.watch(videosContentStateProvider).isEmpty ? '-' : '${ref.watch(videosContentStateProvider).length}',
+                              ).pl(5),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.description),
+                              Text(
+                                ref.watch(documentsContentStateProvider).isEmpty ? '-' : '${ref.watch(documentsContentStateProvider).length}',
+                              ).pl(5),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.quiz),
+                              Text(
+                                ref.watch(othersContentStateProvider).isEmpty ? '-' : '${ref.watch(othersContentStateProvider).length}',
+                              ).pl(5),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: TabBarView(children: [
+                        ContentsTabView(imagesContentStateProvider),
+                        ContentsTabView(videosContentStateProvider),
+                        ContentsTabView(documentsContentStateProvider),
+                        ContentsTabView(othersContentStateProvider),
+                      ]),
+                    ),
+                  ]),
+                ),
+              )
+            ],
+          ),
+        ),
     ]);
   }
 }
@@ -255,7 +288,7 @@ class FileCard extends ConsumerWidget {
       child: Column(
         children: [
           VideoThumbnail(
-            vidUrl: '${ref.watch(httpServerStateProvider).url}/$filename',
+            vidUrl: '${ref.watch(httpServerStateProvider).url}${ref.watch(pathStateProvider)}$filename',
           ),
           Text(
             filename,
