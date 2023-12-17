@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:soda/modals/page_content.dart';
+import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoThumbnail extends StatefulWidget {
-  final String vidUrl;
-  const VideoThumbnail({required this.vidUrl, super.key});
+  final FileElement file;
+  final String url;
+  const VideoThumbnail(this.file, {required this.url, super.key});
 
   @override
   State<VideoThumbnail> createState() => _VideoThumbnailState();
@@ -12,16 +15,21 @@ class VideoThumbnail extends StatefulWidget {
 
 class _VideoThumbnailState extends State<VideoThumbnail> {
   late VideoPlayerController _controller;
+  String error = '';
   List<DurationRange> bufferHealth = [];
+
   bool init = false;
 
   @override
   void initState() {
     super.initState();
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.vidUrl),
+      Uri.parse(widget.url),
     )..initialize().then((_) {
         loadThumbnail();
+      }).catchError((err, st) {
+        error = err;
+        showToast(context, ToastType.error, err);
       });
   }
 
@@ -59,43 +67,70 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SizedBox(
-          height: 120,
-          child: _controller.value.isInitialized
-              ? AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(10.0),
-                    ),
-                    child: VideoPlayer(
-                      _controller,
-                    ),
-                  ),
-                )
-              : const Center(
-                  child: Icon(
-                    Icons.video_file,
-                    color: Colors.redAccent,
-                    size: 60,
-                  ),
-                ),
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Container(
-            child: bufferHealth.isNotEmpty
-                ? bufferHealthIndicator(_controller, bufferHealth).pltrb(0, 0, 4, 4)
-                : const Icon(
-                    Icons.signal_cellular_nodata_rounded,
-                    color: Colors.redAccent,
-                  ),
+    String readableFile = Uri.decodeComponent(widget.file.filename);
+    return Card(
+      shadowColor: Colors.transparent,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(),
+          Stack(
+            children: [
+              SizedBox(
+                height: 120,
+                child: _controller.value.isInitialized
+                    ? AspectRatio(
+                        aspectRatio: _controller.value.aspectRatio,
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(10.0),
+                          ),
+                          child: VideoPlayer(
+                            _controller,
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.video_file,
+                              color: Colors.redAccent,
+                              size: 60,
+                            ),
+                            if (error.isNotEmpty)
+                              Text(
+                                error,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.red,
+                                    ),
+                              )
+                          ],
+                        ),
+                      ),
+              ),
+              Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: error.isNotEmpty
+                      ? const Icon(
+                          Icons.signal_cellular_nodata_rounded,
+                          color: Colors.redAccent,
+                        )
+                      : bufferHealth.isNotEmpty
+                          ? bufferHealthIndicator(_controller, bufferHealth).pltrb(0, 0, 4, 4)
+                          : const SizedBox()),
+            ],
           ),
-        ),
-      ],
+          const Spacer(),
+          Text(
+            readableFile,
+            style: Theme.of(context).textTheme.titleSmall,
+            maxLines: 2,
+          ).pa(12),
+        ],
+      ),
     );
   }
 }
