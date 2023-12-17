@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soda/providers/preferences_service.dart';
+import 'package:soda/widgets/components/contents/grid_folders.dart';
 import 'package:soda/widgets/components/dialogs/loading_dialog.dart';
 import 'package:soda/widgets/components/dialogs/toast_dialog.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../controllers/content_controller.dart';
 import '../../modals/page_content.dart';
+import '../../widgets/components/contents/list_folders.dart';
+import '../../widgets/components/image/thumbnail.dart';
+import '../../widgets/components/others/thumbnail.dart';
 import '../../widgets/components/video/thumbnail.dart';
 import '../add_server.func.dart';
 import '../home_page.dart';
@@ -19,6 +24,7 @@ class HomePageMobile extends ConsumerWidget {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Soda'),
+        bottom: PreferredSize(preferredSize: const Size(40, 20), child: Text(ref.watch(titleStateProvider))),
       ),
       drawer: NavigationDrawer(
           selectedIndex: ref.watch(selectedIndexStateProvvider),
@@ -30,14 +36,16 @@ class HomePageMobile extends ConsumerWidget {
 
             if (ref.read(httpServerStateProvider).url != url) {
               LoadingScreen(context).show();
-              String serverOrigin = ref.read(contentControllerProvider).selectServer(url);
-              ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverOrigin));
+              Uri serverUri = ref.read(contentControllerProvider).selectServer(url);
+              ref.read(pathStateProvider.notifier).state = serverUri.path;
+              ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
+              ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
 
               ref
                   .read(contentControllerProvider)
                   .getPageContent()
-                  .then((_) => ToastDialog(context).show(type: ToastType.success, text: 'Connected'))
-                  .catchError((err, st) => ToastDialog(context).show(type: ToastType.error, text: err));
+                  .then((_) => showToast(context, ToastType.success, 'Connected'))
+                  .catchError((err, st) => showToast(context, ToastType.error, err));
             }
           },
           children: [
@@ -69,7 +77,18 @@ class HomePageMobile extends ConsumerWidget {
               ...ref
                   .watch(serverListStateProvider)
                   .map(
-                    (e) => NavigationDrawerDestination(icon: const Icon(Icons.dns), label: Text(e)),
+                    (e) => NavigationDrawerDestination(
+                      icon: const Icon(Icons.dns),
+                      label: Expanded(
+                        child: OverflowBox(
+                          child: Text(
+                            e,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
                   )
                   .toList()
           ]),
@@ -85,91 +104,68 @@ class HomePageMobile extends ConsumerWidget {
   }
 }
 
-class PageContentSection extends ConsumerWidget {
+class PageContentSection extends ConsumerStatefulWidget {
   const PageContentSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PageContentSection> createState() => _PageContentSectionState();
+}
+
+class _PageContentSectionState extends ConsumerState<PageContentSection> {
+  @override
+  Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
+    bool gridFolderView = PreferencesService().getGridFolder();
     final folderScrollController = ScrollController();
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(
-        'Folders',
-        style: Theme.of(context).textTheme.titleMedium,
-      ).pa(10),
-      Expanded(
-        flex: 2,
+    return Column(children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Folders',
+            style: Theme.of(context).textTheme.titleMedium,
+          ).pa(10),
+          IconButton(
+            onPressed: () async {
+              gridFolderView = !gridFolderView;
+              await PreferencesService().setGridFolder(gridFolderView);
+              setState(() {});
+            },
+            icon: Icon(
+              gridFolderView ? Icons.grid_on_rounded : Icons.list,
+            ),
+          ),
+        ],
+      ),
+      SizedBox(
+        height: screenSize.height * 0.2,
         child: MediaQuery.removePadding(
           context: context,
           removeBottom: true,
           child: Scrollbar(
             controller: folderScrollController,
             thumbVisibility: true,
-            child: GridView.builder(
-              controller: folderScrollController,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                childAspectRatio: 3,
-                crossAxisCount: 3, // Adjust the number of columns as needed
-                crossAxisSpacing: 8.0, // Adjust the spacing between columns
-                mainAxisSpacing: 8.0, // Adjust the spacing between rows
-              ),
-              itemCount: ref.watch(pageContentStateProvider).folders.length, // Replace with the actual number of items in your list
-              itemBuilder: (BuildContext context, int index) {
-                final folder = ref.watch(pageContentStateProvider).folders[index];
-                return GestureDetector(
-                  onTap: () {
-                    LoadingScreen(context).show();
-                    if (folder == '../') {
-                      Uri uri = ref.read(contentControllerProvider).handleReverse();
-                      ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: uri.origin));
-                      ref.read(pathStateProvider.notifier).update((state) => "${uri.path}/");
-                    } else {
-                      ref.watch(pathStateProvider.notifier).update((state) => '$state$folder');
-                    }
-                    ref.read(contentControllerProvider).getPageContent().then((value) {
-                      LoadingScreen(context).hide();
-                    }).catchError((err, st) {
-                      ToastDialog(context).show(type: ToastType.error, text: err);
-                    });
-                  },
-                  child: Card(
-                    shadowColor: Colors.transparent,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.folder,
-                          color: Color.fromARGB(255, 117, 117, 117),
-                        ).pltrb(10, 0, 5, 0),
-                        Expanded(
-                          child: OverflowBox(
-                            child: Text(
-                              folder,
-                              overflow: TextOverflow.ellipsis,
-                            ).pl(5),
-                          ),
-                        ),
-                      ],
-                    ).py(8),
+            child: gridFolderView
+                ? GridFolder(
+                    scrollController: folderScrollController,
+                  )
+                : ListFolder(
+                    scrollController: folderScrollController,
                   ),
-                );
-              },
-            ),
           ),
         ),
       ),
       if (ref.watch(pageContentStateProvider).files.isNotEmpty)
-        Expanded(
-          flex: 8,
+        SizedBox(
+          height: screenSize.height * 0.6,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
-                child: Text(
-                  'Files',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ).pltrb(10, 20, 10, 10),
-              ),
+              Text(
+                'Files',
+                style: Theme.of(context).textTheme.titleMedium,
+              ).pltrb(10, 20, 10, 10),
               Flexible(
                 child: DefaultTabController(
                   length: 4,
@@ -256,46 +252,35 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
 
   @override
   Widget build(BuildContext context) {
+    final scrollController = ScrollController();
     super.build(context);
-    return MediaQuery.removePadding(
-      context: context,
-      child: Scrollbar(
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8.0,
-            mainAxisSpacing: 8.0,
-          ),
-          itemCount: ref.watch(widget.contentStateProvider).length,
-          itemBuilder: (BuildContext context, int index) {
-            final file = ref.watch(widget.contentStateProvider)[index];
-            return FileCard(file.filename);
-          },
-        ).px(10).pt(8),
-      ),
-    );
-  }
-}
-
-class FileCard extends ConsumerWidget {
-  final String filename;
-  const FileCard(this.filename, {super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      shadowColor: Colors.transparent,
-      child: Column(
-        children: [
-          VideoThumbnail(
-            vidUrl: '${ref.watch(httpServerStateProvider).url}${ref.watch(pathStateProvider)}$filename',
-          ),
-          Text(
-            filename,
-            maxLines: 2,
-          ).pa(15),
-        ],
-      ),
+    return Scrollbar(
+      controller: scrollController,
+      thumbVisibility: true,
+      child: GridView.builder(
+        controller: scrollController,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 8.0,
+          mainAxisSpacing: 8.0,
+        ),
+        itemCount: ref.watch(widget.contentStateProvider).length,
+        itemBuilder: (BuildContext context, int index) {
+          final file = ref.watch(widget.contentStateProvider)[index];
+          final media = file.media.toLowerCase();
+          final url = '${ref.watch(httpServerStateProvider).url}${ref.watch(pathStateProvider)}${file.filename}';
+          switch (media) {
+            case 'image':
+              return ImageThumbnail(file, url: url);
+            case 'video':
+              return VideoThumbnail(file, url: url);
+            case 'documents':
+              return const SizedBox();
+            default:
+              return OthersThumbnail(file);
+          }
+        },
+      ).px(10).pt(8),
     );
   }
 }
