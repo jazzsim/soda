@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/providers/preferences_service.dart';
 import 'package:soda/widgets/components/contents/grid_folders.dart';
 import 'package:soda/widgets/components/dialogs/loading_dialog.dart';
-import 'package:soda/widgets/components/dialogs/toast_dialog.dart';
+import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../controllers/content_controller.dart';

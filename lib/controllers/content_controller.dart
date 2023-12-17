@@ -9,10 +9,12 @@ final httpServerStateProvider = StateProvider<HttpServer>((ref) => HttpServer(ur
 
 final pathStateProvider = StateProvider<String>((ref) => '');
 
+final titleStateProvider = StateProvider<String>((ref) => '');
+
 final contentControllerProvider = Provider((ref) => ContentController(ref));
 
 final serverListStateProvider = StateProvider<List<String>>((ref) {
-  final servers = PreferencesService.prefs.getStringList('servers') ?? [];
+  final servers = PreferencesService().getServerList();
 
   var urls = <String>[];
   for (var s in servers) {
@@ -72,25 +74,17 @@ class ContentController {
   // will sort the saved server url into proper origin and path pair
   // e.g: If saved url was https://example.com/a1/films/,
   // will be separate as https://example.com and /a1/films/ and assign to respective StateProviders
-  String selectServer(String url) {
-    List<String> serverListString = PreferencesService.prefs.getStringList('servers') ?? [];
+  Uri selectServer(String url) {
+    List<String> serverListString = PreferencesService().getServerList();
 
     for (var s in serverListString) {
       final server = HttpServer.fromRawJson(s);
       if (server.url == url) {
         Uri serverUri = Uri.parse(server.url);
-        ref.read(pathStateProvider.notifier).state = serverUri.path;
-        return serverUri.origin;
+        return serverUri;
       }
     }
-    return ref.read(httpServerStateProvider).url;
-  }
-
-  Future<void> toFolder(String filename) async {
-    String url = '${ref.watch(httpServerStateProvider).url}/$filename';
-    ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: '$url/$filename'));
-
-    await getPageContent();
+    return Uri.parse(ref.read(httpServerStateProvider).url);
   }
 
   Uri handleReverse() {
@@ -110,12 +104,12 @@ class ContentController {
   }
 
   Future<void> updateServerList() async {
-    List<String> serverList = PreferencesService.prefs.getStringList('servers') ?? [];
+    List<String> serverList = PreferencesService().getServerList();
     final newServer = ref.watch(httpServerStateProvider).toRawJson();
 
     if (!serverList.contains(newServer)) {
       serverList.add(newServer);
-      await PreferencesService.prefs.setStringList('servers', serverList);
+      await PreferencesService().setServerList(serverList);
     }
   }
 }

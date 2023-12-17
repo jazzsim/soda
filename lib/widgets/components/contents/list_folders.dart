@@ -4,7 +4,7 @@ import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../../controllers/content_controller.dart';
 import '../dialogs/loading_dialog.dart';
-import '../dialogs/toast_dialog.dart';
+import '../dialogs/toast_overlay.dart';
 
 class ListFolder extends ConsumerWidget {
   final ScrollController scrollController;

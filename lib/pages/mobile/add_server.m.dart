@@ -6,7 +6,7 @@ import 'package:soda/widgets/components/primary_button.dart';
 import 'package:soda/widgets/components/text_button.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
-import '../../widgets/components/dialogs/toast_dialog.dart';
+import '../../widgets/components/dialogs/toast_overlay.dart';
 
 void addServerModal(WidgetRef ref, BuildContext context) {
   final showPasswordStateProvider = StateProvider<bool>((ref) => true);
@@ -75,14 +75,15 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                 PrimaryButton(
                   'Add',
                   onPressed: () {
+                    ref.invalidate(pathStateProvider);
                     LoadingScreen(context).show();
                     ref.read(contentControllerProvider).getPageContent().then((_) async {
-                      ToastDialog(context).show(type: ToastType.success, text: 'Success', extent: true);
+                      showToast(context, ToastType.success, 'Success');
 
                       // save server details into shared preferences
                       ref.read(contentControllerProvider).updateServerList();
                     }).catchError((err, st) {
-                      ToastDialog(context).show(type: ToastType.error, text: 'Error', extent: true);
+                      showToast(context, ToastType.error, err);
                     });
                   },
                 )
