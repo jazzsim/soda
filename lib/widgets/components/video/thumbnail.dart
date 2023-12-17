@@ -37,7 +37,7 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
     double videoPlaytimeInSeconds = _controller.value.duration.inMilliseconds / 1000;
     // create thumbnail at 38% mark
     int thumbnailPosition = (videoPlaytimeInSeconds * 0.38).toInt();
-
+    _controller.setVolume(0);
     _controller.seekTo(Duration(seconds: thumbnailPosition));
 
     // Add a listener to listen for changes in playback
