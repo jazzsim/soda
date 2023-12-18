@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'package:flutter/material.dart';
 import 'package:soda/modals/page_content.dart';
 import 'package:soda/widgets/extensions/padding.dart';
@@ -21,22 +19,23 @@ class ImageThumbnail extends StatelessWidget {
               Container(
                 foregroundDecoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  gradient: LinearGradient(
-                    colors: const [
+                  image: DecorationImage(
+                    image: NetworkImage(url),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Container(
+                foregroundDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  gradient: const LinearGradient(
+                    colors: [
                       Colors.black,
                       Colors.transparent,
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
-                    stops: const [0, 0.4],
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    url,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                    stops: [0, 0.4],
                   ),
                 ),
               ),
@@ -57,7 +56,6 @@ class ImageThumbnail extends StatelessWidget {
             ],
           ),
         ),
-        // Text
       ],
     );
   }

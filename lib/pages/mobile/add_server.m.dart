@@ -34,14 +34,11 @@ void addServerModal(WidgetRef ref, BuildContext context) {
               keyboardType: TextInputType.url,
               onChanged: (url) => ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: url)),
             ).pb(20).pt(20),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            ExpansionTile(
+              title: const Text(
+                'Credentials (Optional)',
+              ),
               children: [
-                Text(
-                  'Credentials (Optional)',
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.start,
-                ),
                 TextField(
                   decoration: const InputDecoration(labelText: 'Username', border: OutlineInputBorder()),
                   onChanged: (username) => ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(username: username)),
@@ -62,7 +59,7 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                   onChanged: (password) => ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(password: password)),
                 ).pb(10).pt(5),
               ],
-            ),
+            ).pb(20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -80,8 +77,15 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                     ref.read(contentControllerProvider).getPageContent().then((_) async {
                       showToast(context, ToastType.success, 'Success');
 
+                      Navigator.of(context).pop();
                       // save server details into shared preferences
                       ref.read(contentControllerProvider).updateServerList();
+                      ref.invalidate(serverListStateProvider);
+
+                      Uri serverUri = Uri.parse(ref.read(httpServerStateProvider).url);
+                      ref.read(pathStateProvider.notifier).state = serverUri.path;
+                      ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
+                      ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
                     }).catchError((err, st) {
                       showToast(context, ToastType.error, err);
                     });

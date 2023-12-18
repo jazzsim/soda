@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/providers/preferences_service.dart';
 import 'package:soda/widgets/components/contents/grid_folders.dart';
-import 'package:soda/widgets/components/dialogs/loading_dialog.dart';
-import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../controllers/content_controller.dart';
@@ -24,29 +22,18 @@ class HomePageMobile extends ConsumerWidget {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Soda'),
-        bottom: PreferredSize(preferredSize: const Size(40, 20), child: Text(ref.watch(titleStateProvider))),
+        bottom: PreferredSize(
+          preferredSize: const Size(40, 20),
+          child: Text(
+            ref.watch(titleStateProvider),
+          ),
+        ),
       ),
       drawer: NavigationDrawer(
           selectedIndex: ref.watch(selectedIndexStateProvvider),
           onDestinationSelected: (int index) {
             Navigator.of(context).pop();
-
-            ref.read(selectedIndexStateProvvider.notifier).update((state) => index);
-            String url = ref.watch(serverListStateProvider)[index];
-
-            if (ref.read(httpServerStateProvider).url != url) {
-              LoadingScreen(context).show();
-              Uri serverUri = ref.read(contentControllerProvider).selectServer(url);
-              ref.read(pathStateProvider.notifier).state = serverUri.path;
-              ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
-              ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
-
-              ref
-                  .read(contentControllerProvider)
-                  .getPageContent()
-                  .then((_) => showToast(context, ToastType.success, 'Connected'))
-                  .catchError((err, st) => showToast(context, ToastType.error, err));
-            }
+            selectServerFunc(ref, context, index);
           },
           children: [
             ListTile(
@@ -77,12 +64,12 @@ class HomePageMobile extends ConsumerWidget {
               ...ref
                   .watch(serverListStateProvider)
                   .map(
-                    (e) => NavigationDrawerDestination(
+                    (server) => NavigationDrawerDestination(
                       icon: const Icon(Icons.dns),
                       label: Expanded(
                         child: OverflowBox(
                           child: Text(
-                            e,
+                            server,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -128,8 +115,7 @@ class _PageContentSectionState extends ConsumerState<PageContentSection> {
           ).pa(10),
           IconButton(
             onPressed: () async {
-              gridFolderView = !gridFolderView;
-              await PreferencesService().setGridFolder(gridFolderView);
+              updateFolderPref();
               setState(() {});
             },
             icon: Icon(
