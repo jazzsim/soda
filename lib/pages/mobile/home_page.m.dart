@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/providers/preferences_service.dart';
 import 'package:soda/widgets/components/contents/grid_folders.dart';
+import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../controllers/content_controller.dart';
 import '../../modals/page_content.dart';
 import '../../widgets/components/contents/list_folders.dart';
+import '../../widgets/components/documents/thumbnail.dart';
 import '../../widgets/components/image/thumbnail.dart';
 import '../../widgets/components/others/thumbnail.dart';
 import '../../widgets/components/video/thumbnail.dart';
@@ -31,53 +33,42 @@ class HomePageMobile extends ConsumerWidget {
       ),
       drawer: NavigationDrawer(
           selectedIndex: ref.watch(selectedIndexStateProvvider),
-          onDestinationSelected: (int index) {
-            Navigator.of(context).pop();
-            selectServerFunc(ref, context, index);
-          },
           children: [
-            ListTile(
-              title: const Text(
-                'Server List',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
+            Consumer(builder: (context, ref, child) {
+              return ListTile(
+                title: const Text(
+                  'New Server',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              trailing: Consumer(
-                builder: (context, ref, child) {
-                  return IconButton(
-                    tooltip: "Add a new Server",
-                    onPressed: () => addServer(ref, context, MediaQuery.of(context).size.width),
-                    icon: const Icon(Icons.add_circle_rounded),
-                  );
-                },
-              ),
-            ),
+                trailing: const Icon(Icons.add_circle_rounded),
+                onTap: () => addServer(ref, context, MediaQuery.of(context).size.width),
+              );
+            }),
             const Divider(),
-            if (ref.watch(serverListStateProvider).isEmpty)
-              const Column(children: [
-                Text(
-                  'No server yet',
-                ),
-              ])
-            else
+            if (ref.watch(serverListStateProvider).isNotEmpty) ...[
               ...ref
                   .watch(serverListStateProvider)
+                  .asMap()
+                  .entries
                   .map(
-                    (server) => NavigationDrawerDestination(
-                      icon: const Icon(Icons.dns),
-                      label: Expanded(
-                        child: OverflowBox(
-                          child: Text(
-                            server,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                    (MapEntry<int, String> server) => ListTile(
+                      leading: const Icon(Icons.dns),
+                      onTap: () => selectServerFunc(ref, context, server.key),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(120)),
+                      onLongPress: () => deleteServerDialog(ref, context, server.key),
+                      selected: ref.watch(selectedIndexStateProvvider) == server.key,
+                      selectedTileColor: const Color(0xFFD8E2F7),
+                      title: Text(
+                        server.value,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                    ).px(5),
                   )
-                  .toList()
+                  .toList(),
+            ]
           ]),
       body: ref.watch(pageContentStateProvider).files.isEmpty && ref.watch(pageContentStateProvider).folders.isEmpty
           ? Center(
@@ -224,6 +215,41 @@ class _PageContentSectionState extends ConsumerState<PageContentSection> {
   }
 }
 
+bool deleteServerDialog(WidgetRef ref, BuildContext context, int index) {
+  bool delete = false;
+  showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: const Text('Are you sure you want to delete this item?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                // Close the dialog
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(contentControllerProvider).deleteServer(index).then((value) {
+                  showToast(context, ToastType.success, "Server removed", extent: true);
+                });
+                // Close the dialog
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      });
+  return delete;
+}
+
 class ContentsTabView extends ConsumerStatefulWidget {
   final StateProvider<List<FileElement>> contentStateProvider;
   const ContentsTabView(this.contentStateProvider, {super.key});
@@ -260,8 +286,8 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
               return ImageThumbnail(file, url: url);
             case 'video':
               return VideoThumbnail(file, url: url);
-            case 'documents':
-              return const SizedBox();
+            case 'document':
+              return DocumentThumbnail(file, url: url);
             default:
               return OthersThumbnail(file);
           }

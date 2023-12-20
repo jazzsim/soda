@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/api/server_api.dart';
 import 'package:soda/modals/http_server.dart';
+import 'package:soda/pages/home_page.dart';
 import 'package:soda/providers/preferences_service.dart';
 
 import '../modals/page_content.dart';
@@ -109,7 +112,29 @@ class ContentController {
 
     if (!serverList.contains(newServer)) {
       serverList.add(newServer);
+      ref.read(selectedIndexStateProvvider.notifier).update((state) => serverList.length - 1);
       await PreferencesService().setServerList(serverList);
+    }
+  }
+
+  Future<void> deleteServer(int index) async {
+    final selectedServer = ref.watch(serverListStateProvider)[index];
+    List<String> serverList = PreferencesService().getServerList();
+    List<String> newServerList = [];
+
+    for (var server in serverList) {
+      var serverJson = jsonDecode(server);
+      if (serverJson["url"] != selectedServer) {
+        newServerList.add(json.encode(serverJson));
+      }
+    }
+    await PreferencesService().setServerList(newServerList);
+    ref.invalidate(serverListStateProvider);
+
+    // clear content if current active content is from deleted server
+    if (ref.watch(selectedIndexStateProvvider) == index) {
+      ref.invalidate(selectedIndexStateProvvider);
+      ref.invalidate(pageContentStateProvider);
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/pages/mobile/add_server.m.dart';
 import 'package:soda/providers/preferences_service.dart';
 import 'package:soda/widgets/components/contents/grid_folders.dart';
+import 'package:soda/widgets/components/documents/thumbnail.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../controllers/content_controller.dart';
@@ -306,8 +307,8 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
               return ImageThumbnail(file, url: url);
             case 'video':
               return VideoThumbnail(file, url: url);
-            case 'documents':
-              return const SizedBox();
+            case 'document':
+              return DocumentThumbnailDekstop(file);
             default:
               return OthersThumbnail(file);
           }

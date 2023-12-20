@@ -36,11 +36,12 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
     ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
 
-    ref
-        .read(contentControllerProvider)
-        .getPageContent()
-        .then((_) => showToast(context, ToastType.success, 'Connected'))
-        .catchError((err, st) => showToast(context, ToastType.error, err));
+    ref.read(contentControllerProvider).getPageContent().then((_) {
+      showToast(context, ToastType.success, 'Connected');
+      Navigator.of(context).pop();
+    }).catchError((err, st) {
+      showToast(context, ToastType.error, err);
+    });
   }
 }
 

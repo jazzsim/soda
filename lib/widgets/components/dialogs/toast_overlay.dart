@@ -5,7 +5,7 @@ import 'loading_dialog.dart';
 
 enum ToastType { success, error }
 
-void showToast(BuildContext context, ToastType type, String message) {
+void showToast(BuildContext context, ToastType type, String message, {bool? extent}) {
   // close loading dialog if exist
   if (ModalRoute.of(context)?.isCurrent != true) {
     LoadingScreen(context).hide();
@@ -15,7 +15,7 @@ void showToast(BuildContext context, ToastType type, String message) {
 
   // Create a controller for the fade-out animation
   AnimationController controller = AnimationController(
-    duration: const Duration(milliseconds: 1800),
+    duration: Duration(milliseconds: extent ?? false ? 2800 : 1800),
     vsync: Overlay.of(context),
   );
 

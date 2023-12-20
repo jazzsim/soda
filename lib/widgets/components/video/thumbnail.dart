@@ -66,6 +66,12 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     String readableFile = Uri.decodeComponent(widget.file.filename);
     return Card(
