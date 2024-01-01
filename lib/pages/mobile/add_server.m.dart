@@ -87,9 +87,13 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                         ref.invalidate(serverListStateProvider);
 
                         Uri serverUri = Uri.parse(ref.read(httpServerStateProvider).url);
-                        ref.read(pathStateProvider.notifier).state = serverUri.path;
-                        ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
-                        ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
+                        try {
+                          ref.read(pathStateProvider.notifier).state = serverUri.path;
+                          ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
+                          ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
+                        } catch (e) {
+                          ref.read(titleStateProvider.notifier).state = '/';
+                        }
                       }).catchError((err, st) {
                         showToast(context, ToastType.error, err);
                       });
