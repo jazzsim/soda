@@ -286,34 +286,30 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
     final scrollController = ScrollController();
     int columnsCount = (MediaQuery.of(context).size.width / minItemWidth).floor();
 
-    return Scrollbar(
+    return GridView.builder(
       controller: scrollController,
-      thumbVisibility: true,
-      child: GridView.builder(
-        controller: scrollController,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columnsCount,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 12.0,
-          mainAxisSpacing: 12.0,
-        ),
-        itemCount: ref.watch(widget.contentStateProvider).length,
-        itemBuilder: (BuildContext context, int index) {
-          final file = ref.watch(widget.contentStateProvider)[index];
-          final media = file.media.toLowerCase();
-          final url = file.filename;
-          switch (media) {
-            case 'image':
-              return ImageThumbnail(file, url: url);
-            case 'video':
-              return VideoThumbnail(file, url: url);
-            case 'document':
-              return DocumentThumbnailDekstop(file);
-            default:
-              return OthersThumbnail(file);
-          }
-        },
-      ).px(10).pt(8),
-    );
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columnsCount,
+        childAspectRatio: 1.0,
+        crossAxisSpacing: 12.0,
+        mainAxisSpacing: 12.0,
+      ),
+      itemCount: ref.watch(widget.contentStateProvider).length,
+      itemBuilder: (BuildContext context, int index) {
+        final file = ref.watch(widget.contentStateProvider)[index];
+        final media = file.media.toLowerCase();
+        final url = file.filename;
+        switch (media) {
+          case 'image':
+            return ImageThumbnail(file, url: url);
+          case 'video':
+            return VideoThumbnail(file, url: url);
+          case 'document':
+            return DocumentThumbnailDekstop(file);
+          default:
+            return OthersThumbnail(file);
+        }
+      },
+    ).px(10).pt(8);
   }
 }

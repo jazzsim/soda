@@ -32,8 +32,11 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
   if (ref.read(httpServerStateProvider).url != url) {
     LoadingScreen(context).show();
     Uri serverUri = ref.read(contentControllerProvider).selectServer(url);
+    ref.invalidate(pageContentStateProvider);
     ref.read(pathStateProvider.notifier).state = serverUri.path;
-    ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
+    if (serverUri.pathSegments.isNotEmpty) {
+      ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
+    }
     ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
 
     ref.read(contentControllerProvider).getPageContent().then((_) {

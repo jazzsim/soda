@@ -10,5 +10,6 @@ void addServer(WidgetRef ref, BuildContext context, double screenWidth) {
     // showModalBottomSheet / showDialog function
   } else {
     // showModalBottomSheet / showDialog function
+    addServerModal(ref, context);
   }
 }
