@@ -50,6 +50,10 @@ dependencies:
       url: https://github.com/ScerIO/packages.flutter.git
       ref: main # branch name
       path: packages/pdfx/
+  media_kit: ^1.1.10+1
+  media_kit_libs_video: ^1.0.4
+  media_kit_video: ^1.2.4
+  extended_image: ^8.2.0
 
 dev_dependencies:
   flutter_test:

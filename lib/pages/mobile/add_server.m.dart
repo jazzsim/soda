@@ -10,7 +10,6 @@ import '../../widgets/components/dialogs/toast_overlay.dart';
 
 void addServerModal(WidgetRef ref, BuildContext context) {
   final showPasswordStateProvider = StateProvider<bool>((ref) => false);
-
   showModalBottomSheet(
     context: context,
     showDragHandle: true,

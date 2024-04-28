@@ -280,7 +280,7 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
         itemBuilder: (BuildContext context, int index) {
           final file = ref.watch(widget.contentStateProvider)[index];
           final media = file.media.toLowerCase();
-          final url = '${ref.watch(httpServerStateProvider).url}${ref.watch(pathStateProvider)}${file.filename}';
+          final url = file.filename;
           switch (media) {
             case 'image':
               return ImageThumbnail(file, url: url);

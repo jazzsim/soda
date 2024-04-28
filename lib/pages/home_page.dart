@@ -37,7 +37,6 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     if (serverUri.pathSegments.isNotEmpty) {
       ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
     }
-    ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
 
     ref.read(contentControllerProvider).getPageContent().then((_) {
       showToast(context, ToastType.success, 'Connected');

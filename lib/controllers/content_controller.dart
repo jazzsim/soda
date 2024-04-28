@@ -83,7 +83,15 @@ class ContentController {
     for (var s in serverListString) {
       final server = HttpServer.fromRawJson(s);
       if (server.url == url) {
+        ref.read(httpServerStateProvider.notifier).update(
+              (state) => state.copyWith(
+                url: server.url,
+                username: server.username,
+                password: server.password,
+              ),
+            );
         Uri serverUri = Uri.parse(server.url);
+
         return serverUri;
       }
     }

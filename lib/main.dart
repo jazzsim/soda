@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:soda/constants/colours.dart';
 import 'package:soda/pages/home_page.dart';
 
@@ -10,6 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await PreferencesService.initialize();
+  MediaKit.ensureInitialized();
 
   runApp(
     const ProviderScope(
