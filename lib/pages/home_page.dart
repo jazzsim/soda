@@ -39,7 +39,7 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     }
 
     ref.read(contentControllerProvider).getPageContent().then((_) {
-      showToast(context, ToastType.success, 'Connected');
+      // showToast(context, ToastType.success, 'Connected');
       Navigator.of(context).pop();
     }).catchError((err, st) {
       showToast(context, ToastType.error, err);
