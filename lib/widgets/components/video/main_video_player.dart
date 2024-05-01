@@ -1,16 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
-import 'package:video_player/video_player.dart';
 
 class MainVideoPlayer extends ConsumerStatefulWidget {
   final String url;
@@ -24,7 +19,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   bool showVideoControl = false, isFullScreen = false;
   Timer? _timer;
   final Duration _duration = const Duration(milliseconds: 550); // Set the duration for pointer stop
-
+  late final videoPlayerHeight = (MediaQuery.of(context).size.height) / 2, videoPlayerWidth = (MediaQuery.of(context).size.width) / 2;
   late final player = Player();
   late final controller = VideoController(player);
 
@@ -32,6 +27,16 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   void initState() {
     super.initState();
     String basicAuth = 'Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}';
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (player.platform is NativePlayer) {
+        await (player.platform as dynamic).setProperty(
+          'force-seekable',
+          'yes',
+        );
+      }
+    });
+
     player.open(
       Media(
         ref.read(httpServerStateProvider).url + ref.read(pathStateProvider) + widget.url,
@@ -79,19 +84,50 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                             setState(() {});
                           });
                         },
-                        child: Video(
-                          controller: controller,
-                          // Provide custom builder for controls.
-                          controls: (state) {
-                            return StreamBuilder(
-                              stream: state.widget.controller.player.stream.playing,
-                              builder: (context, playing) => GestureDetector(
-                                onSecondaryTapDown: (_) async {
-                                  player.state.playing ? player.pause() : player.play();
-                                },
-                              ),
-                            );
-                          },
+                        // loading view
+                        child: Stack(
+                          children: [
+                            Video(
+                              controller: controller,
+                              controls: (state) {
+                                return GestureDetector(
+                                  onDoubleTap: () {
+                                    state.toggleFullscreen();
+                                  },
+                                  onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
+                                );
+                              },
+                            ),
+                            StreamBuilder(
+                              stream: player.stream.buffering,
+                              builder: (context, snapshot) {
+                                if (snapshot.data == true) {
+                                  return GestureDetector(
+                                    onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          color: Colors.black26,
+                                        ),
+                                        Positioned(
+                                          top: videoPlayerHeight - 50,
+                                          left: videoPlayerWidth - 50,
+                                          child: const SizedBox(
+                                            height: 80,
+                                            width: 80,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                                return Container();
+                              },
+                            ),
+                          ],
                         ),
                       ),
                       Positioned(
@@ -134,105 +170,139 @@ class _ControlsOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double controlsOverlaySize = videoPlayerSize * 0.45;
+    const double controlsOverlaySize = 400;
 
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 420),
-      width: controlsOverlaySize,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        // color: const Color.fromARGB(217, 239, 239, 239),
-        color: const Color.fromARGB(173, 239, 239, 239),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: controlsOverlaySize,
-              height: 40,
-              child: Stack(
+    return StreamBuilder<Duration>(
+        stream: player.stream.position,
+        builder: (context, snapshot) {
+          return Container(
+            width: controlsOverlaySize,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: const Color.fromARGB(235, 216, 215, 215),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 3, 10, 11),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: IconButton(
-                        onPressed: () => player.state.playing ? player.pause() : player.play(),
-                        alignment: Alignment.center,
-                        iconSize: 42,
-                        padding: EdgeInsets.zero,
-                        hoverColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        splashColor: Colors.transparent,
-                        icon: Icon(
-                          player.state.playing ? Icons.pause : Icons.play_arrow,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Positioned(
-                    top: 13,
-                    left: 0,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  SizedBox(
+                    width: controlsOverlaySize,
+                    height: 40,
+                    child: Stack(
                       children: [
-                        Padding(
-                          padding: EdgeInsets.only(right: 10),
+                        Positioned.fill(
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: IconButton(
+                              onPressed: () => player.state.playing ? player.pause() : player.play(),
+                              alignment: Alignment.center,
+                              iconSize: 42,
+                              padding: EdgeInsets.zero,
+                              hoverColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                              icon: Icon(
+                                player.state.playing ? Icons.pause : Icons.play_arrow,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Positioned(
+                          top: 13,
+                          left: 0,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(right: 10),
+                                child: Icon(
+                                  Icons.volume_up,
+                                  size: 20,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 55,
+                                child: VolumeSlider(),
+                              )
+                            ],
+                          ),
+                        ),
+                        const Positioned(
+                          top: 13,
+                          right: 0,
                           child: Icon(
-                            Icons.volume_up,
+                            Icons.playlist_play_rounded,
                             size: 20,
                           ),
                         ),
-                        SizedBox(
-                          width: 55,
-                          child: VolumeSlider(),
-                        )
                       ],
                     ),
                   ),
-                  const Positioned(
-                    top: 13,
-                    right: 0,
-                    child: Icon(
-                      Icons.playlist_play_rounded,
-                      size: 20,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, right: 10),
+                    child: Row(
+                      children: [
+                        Text(
+                          durationToStringWithoutMilliseconds(player.state.position),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w400,
+                              ),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 15, right: 15, bottom: 0),
+                            child: ProgressBar(player: player),
+                          ),
+                        ),
+                        Text(
+                          durationToStringWithoutMilliseconds(player.state.duration),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w400,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 10, right: 10),
-              child: Row(
-                children: [
-                  Text(
-                    durationToStringWithoutMilliseconds(player.state.position),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 15, right: 15, bottom: 5),
-                      child: LinearProgressIndicator(
-                        value: player.state.position.inMilliseconds.toDouble(),
-                        color: const Color.fromARGB(176, 76, 78, 81),
-                        backgroundColor: const Color.fromARGB(174, 158, 158, 158),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    durationToStringWithoutMilliseconds(player.state.duration),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
+          );
+        });
+  }
+}
+
+class ProgressBar extends StatelessWidget {
+  const ProgressBar({
+    super.key,
+    required this.player,
+  });
+
+  final Player player;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliderTheme(
+      data: SliderThemeData(
+        trackHeight: 2,
+        activeTrackColor: Colors.black38,
+        inactiveTrackColor: Colors.grey[300],
+        thumbShape: const EmptySliderThumb(),
+        overlayColor: Colors.transparent,
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+      ),
+      child: Slider(
+        min: 0.0,
+        max: player.state.duration.inSeconds.toDouble(),
+        value: player.state.position.inSeconds.toDouble(),
+        onChangeEnd: (seekTo) async {
+          await player.seek(
+            Duration(
+              seconds: seekTo.toInt(),
             ),
-          ],
-        ),
+          );
+        },
+        onChanged: (_) {},
       ),
     );
   }
@@ -274,4 +344,30 @@ class _VolumeSliderState extends State<VolumeSlider> {
       ),
     );
   }
+}
+
+class EmptySliderThumb extends SliderComponentShape {
+  const EmptySliderThumb();
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    double thumbRadius = 0;
+    return Size.fromRadius(thumbRadius);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {}
 }
