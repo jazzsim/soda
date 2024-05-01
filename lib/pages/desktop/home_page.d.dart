@@ -44,23 +44,6 @@ class _HomePageDekstopState extends ConsumerState<HomePageDekstop> with SingleTi
                 child: Column(
                   children: [
                     ListTile(
-                      onTap: () => PreferencesService().clear(),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Clear Server',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const Icon(
-                            Icons.discord_sharp,
-                          ),
-                        ],
-                      ).py(12),
-                    ),
-                    ListTile(
                       onTap: () => addServerModal(ref, context),
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

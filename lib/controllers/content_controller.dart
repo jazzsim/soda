@@ -85,7 +85,7 @@ class ContentController {
       if (server.url == url) {
         ref.read(httpServerStateProvider.notifier).update(
               (state) => state.copyWith(
-                url: server.url,
+                url: url,
                 username: server.username,
                 password: server.password,
               ),

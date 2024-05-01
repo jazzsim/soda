@@ -33,6 +33,7 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     LoadingScreen(context).show();
     Uri serverUri = ref.read(contentControllerProvider).selectServer(url);
     ref.invalidate(pageContentStateProvider);
+    ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
     ref.read(pathStateProvider.notifier).state = serverUri.path;
     if (serverUri.pathSegments.isNotEmpty) {
       ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
@@ -42,6 +43,7 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
       // showToast(context, ToastType.success, 'Connected');
       Navigator.of(context).pop();
     }).catchError((err, st) {
+      LoadingScreen(context).hide();
       showToast(context, ToastType.error, err);
     });
   }

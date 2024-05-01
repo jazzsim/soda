@@ -7,7 +7,7 @@ class ServerApi {
   /* GET */
   // search API
   Future<PageContent> getContent(HttpServer server) async {
-    final res = await BaseClient().post('scrape', server );
+    final res = await BaseClient().post('scrape', server);
     if (res != null) {
       return PageContent.fromJson(res);
     }
