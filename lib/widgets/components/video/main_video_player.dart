@@ -1,13 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
+import 'package:soda/widgets/extensions/padding.dart';
 import 'package:window_size/window_size.dart';
+
+final volumeStateProvider = StateProvider<double>((ref) => 0);
+
+final showVolumeProvider = StateProvider<bool>((ref) => false);
+
+final videoTimerProvider = StateProvider<Timer>((ref) => Timer.periodic(const Duration(milliseconds: 1200), (Timer timer) {}));
 
 class MainVideoPlayer extends ConsumerStatefulWidget {
   final String url;
@@ -21,6 +28,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   bool showVideoControl = false, isFullScreen = false;
   Timer? _timer;
   final Duration _duration = const Duration(milliseconds: 550); // Set the duration for pointer stop
+  final Duration _volumeDuration = const Duration(milliseconds: 1200); // Set the duration for pointer stop
   late final videoPlayerHeight = (MediaQuery.of(context).size.height) / 2, videoPlayerWidth = (MediaQuery.of(context).size.width) / 2;
   late final player = Player();
   late final controller = VideoController(player);
@@ -73,6 +81,33 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                   alignment: Alignment.bottomCenter,
                   children: [
                     Listener(
+                      onPointerSignal: (pointerSignal) {
+                        if (pointerSignal is PointerScrollEvent) {
+                          // do something when scrolled
+                          double currentVolume = player.state.volume;
+                          if (pointerSignal.scrollDelta.dy < 0) {
+                            if (currentVolume + 2.0 > 100) {
+                              player.setVolume(100);
+                            } else {
+                              player.setVolume(currentVolume + 2.0);
+                            }
+                          } else {
+                            if (currentVolume - 2.0 < 0) {
+                              player.setVolume(0);
+                            } else {
+                              player.setVolume(currentVolume - 2.0);
+                            }
+                          }
+                          ref.read(volumeStateProvider.notifier).update((state) => player.state.volume);
+                          ref.read(showVolumeProvider.notifier).update((state) => true);
+                          setState(() {});
+                          ref.read(videoTimerProvider.notifier).state.cancel();
+                          ref.read(videoTimerProvider.notifier).state = Timer(_volumeDuration, () {
+                            ref.read(showVolumeProvider.notifier).update((state) => false);
+                            setState(() {});
+                          });
+                        }
+                      },
                       onPointerHover: (event) {
                         showVideoControl = true;
                         setState(() {});
@@ -126,6 +161,42 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                             },
                           ),
                         ],
+                      ),
+                    ),
+                    Positioned(
+                      top: 70,
+                      left: 30,
+                      child: AnimatedOpacity(
+                        opacity: ref.watch(showVolumeProvider) ? 1 : 0,
+                        curve: Curves.decelerate,
+                        duration: const Duration(
+                          milliseconds: 180,
+                        ),
+                        child: Container(
+                          width: 140,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              12,
+                            ),
+                            color: const Color.fromARGB(237, 238, 238, 238),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Volume: ${ref.watch(volumeStateProvider).floorToDouble().round()}",
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
+                              ),
+                              SizedBox(
+                                width: 115,
+                                child: LinearProgressIndicator(
+                                  value: player.state.volume / 100,
+                                  color: Colors.blue,
+                                ).pt(5),
+                              ),
+                            ],
+                          ).pltrb(12, 8, 12, 12),
+                        ),
                       ),
                     ),
                     Positioned(
@@ -199,102 +270,105 @@ class _ControlsOverlay extends StatelessWidget {
     const double controlsOverlaySize = 400;
 
     return StreamBuilder<Duration>(
-        stream: player.stream.position,
-        builder: (context, snapshot) {
-          return Container(
-            width: controlsOverlaySize,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: const Color.fromARGB(235, 216, 215, 215),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 3, 10, 11),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: controlsOverlaySize,
-                    height: 40,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Align(
+      stream: player.stream.position,
+      builder: (context, snapshot) {
+        return Container(
+          width: controlsOverlaySize,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: const Color.fromARGB(235, 216, 215, 215),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 3, 10, 11),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: controlsOverlaySize,
+                  height: 40,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: IconButton(
+                            onPressed: () => player.state.playing ? player.pause() : player.play(),
                             alignment: Alignment.center,
-                            child: IconButton(
-                              onPressed: () => player.state.playing ? player.pause() : player.play(),
-                              alignment: Alignment.center,
-                              iconSize: 42,
-                              padding: EdgeInsets.zero,
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                              icon: Icon(
-                                player.state.playing ? Icons.pause : Icons.play_arrow,
-                              ),
+                            iconSize: 42,
+                            padding: EdgeInsets.zero,
+                            hoverColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
+                            splashColor: Colors.transparent,
+                            icon: Icon(
+                              player.state.playing ? Icons.pause : Icons.play_arrow,
                             ),
                           ),
                         ),
-                        const Positioned(
-                          top: 13,
-                          left: 0,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(right: 10),
-                                child: Icon(
-                                  Icons.volume_up,
-                                  size: 20,
-                                ),
+                      ),
+                      Positioned(
+                        top: 13,
+                        left: 0,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(right: 10),
+                              child: Icon(
+                                Icons.volume_up,
+                                size: 20,
                               ),
-                              SizedBox(
-                                width: 55,
-                                child: VolumeSlider(),
-                              )
-                            ],
-                          ),
+                            ),
+                            SizedBox(
+                              width: 55,
+                              child: VolumeSlider(
+                                player: player,
+                              ),
+                            )
+                          ],
                         ),
-                        const Positioned(
-                          top: 13,
-                          right: 0,
-                          child: Icon(
-                            Icons.playlist_play_rounded,
-                            size: 20,
-                          ),
+                      ),
+                      const Positioned(
+                        top: 13,
+                        right: 0,
+                        child: Icon(
+                          Icons.playlist_play_rounded,
+                          size: 20,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10, right: 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          durationToStringWithoutMilliseconds(player.state.position),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w400,
-                              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 10, right: 10),
+                  child: Row(
+                    children: [
+                      Text(
+                        durationToStringWithoutMilliseconds(player.state.position),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w400,
+                            ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 15, right: 15, bottom: 0),
+                          child: ProgressBar(player: player),
                         ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 15, right: 15, bottom: 0),
-                            child: ProgressBar(player: player),
-                          ),
-                        ),
-                        Text(
-                          durationToStringWithoutMilliseconds(player.state.duration),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w400,
-                              ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      Text(
+                        durationToStringWithoutMilliseconds(player.state.duration),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w400,
+                            ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -310,7 +384,7 @@ class ProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliderTheme(
       data: SliderThemeData(
-        trackHeight: 2,
+        trackHeight: 5,
         activeTrackColor: Colors.black38,
         inactiveTrackColor: Colors.grey[300],
         thumbShape: const EmptySliderThumb(),
@@ -344,15 +418,16 @@ String durationToStringWithoutMilliseconds(Duration duration) {
   return '$hours:$minutes:$seconds';
 }
 
-class VolumeSlider extends StatefulWidget {
-  const VolumeSlider({super.key});
+class VolumeSlider extends ConsumerStatefulWidget {
+  final Player player;
+
+  const VolumeSlider({required this.player, super.key});
 
   @override
-  State<VolumeSlider> createState() => _VolumeSliderState();
+  ConsumerState<VolumeSlider> createState() => _VolumeSliderState();
 }
 
-class _VolumeSliderState extends State<VolumeSlider> {
-  double _volume = 1.0;
+class _VolumeSliderState extends ConsumerState<VolumeSlider> {
   @override
   Widget build(BuildContext context) {
     return SliderTheme(
@@ -361,12 +436,21 @@ class _VolumeSliderState extends State<VolumeSlider> {
         thumbShape: SliderComponentShape.noThumb,
       ),
       child: Slider(
-        value: _volume,
+        max: 100,
+        value: widget.player.state.volume,
         onChanged: (value) => setState(() {
-          _volume = value;
+          widget.player.setVolume(value);
+          ref.read(volumeStateProvider.notifier).update((state) => value);
+          ref.read(showVolumeProvider.notifier).update((state) => true);
+          setState(() {});
+          ref.read(videoTimerProvider.notifier).state.cancel();
+          ref.read(videoTimerProvider.notifier).state = Timer(const Duration(milliseconds: 1200), () {
+            ref.read(showVolumeProvider.notifier).update((state) => false);
+            setState(() {});
+          });
         }),
-        activeColor: Colors.blueAccent,
-        inactiveColor: const Color.fromARGB(229, 199, 198, 198),
+        activeColor: const Color.fromARGB(255, 96, 154, 254),
+        inactiveColor: const Color.fromARGB(228, 222, 222, 222),
       ),
     );
   }
