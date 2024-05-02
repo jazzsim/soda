@@ -55,6 +55,11 @@ dependencies:
   media_kit_video: ^1.2.4
   extended_image: ^8.2.0
   file_selector: ^1.0.3
+  window_size:
+    git:
+      url: https://github.com/google/flutter-desktop-embedding.git
+      path: plugins/window_size
+      ref: 5c51870ced62a00e809ba4b81a846a052d241c9f
 
 dev_dependencies:
   flutter_test:

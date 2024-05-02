@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
+import 'package:window_size/window_size.dart';
 
 class MainVideoPlayer extends ConsumerStatefulWidget {
   final String url;
@@ -26,6 +28,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    setWindowTitle(Uri.decodeComponent(widget.url));
     String basicAuth = 'Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}';
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -50,6 +53,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
 
   @override
   void dispose() {
+    setWindowTitle("Soda");
     player.pause();
     player.dispose();
     super.dispose();
@@ -58,11 +62,6 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          Uri.decodeComponent(widget.url),
-        ),
-      ),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -70,88 +69,115 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
             Expanded(
               child: SizedBox(
                 width: MediaQuery.of(context).size.width,
-                child: Scaffold(
-                  body: Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      Listener(
-                        onPointerHover: (event) {
-                          showVideoControl = true;
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    Listener(
+                      onPointerHover: (event) {
+                        showVideoControl = true;
+                        setState(() {});
+                        _timer?.cancel();
+                        _timer = Timer(_duration, () {
+                          showVideoControl = false;
                           setState(() {});
-                          _timer?.cancel();
-                          _timer = Timer(_duration, () {
-                            showVideoControl = false;
-                            setState(() {});
-                          });
-                        },
-                        // loading view
-                        child: Stack(
-                          children: [
-                            Video(
-                              controller: controller,
-                              controls: (state) {
+                        });
+                      },
+                      // loading view
+                      child: Stack(
+                        children: [
+                          Video(
+                            controller: controller,
+                            controls: (state) {
+                              return GestureDetector(
+                                onDoubleTap: () {
+                                  state.toggleFullscreen();
+                                },
+                                onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
+                              );
+                            },
+                          ),
+                          StreamBuilder(
+                            stream: player.stream.buffering,
+                            builder: (context, snapshot) {
+                              if (snapshot.data == true) {
                                 return GestureDetector(
-                                  onDoubleTap: () {
-                                    state.toggleFullscreen();
-                                  },
                                   onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
-                                );
-                              },
-                            ),
-                            StreamBuilder(
-                              stream: player.stream.buffering,
-                              builder: (context, snapshot) {
-                                if (snapshot.data == true) {
-                                  return GestureDetector(
-                                    onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          color: Colors.black26,
-                                        ),
-                                        Positioned(
-                                          top: videoPlayerHeight - 50,
-                                          left: videoPlayerWidth - 50,
-                                          child: const SizedBox(
-                                            height: 80,
-                                            width: 80,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.red,
-                                            ),
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        color: Colors.black26,
+                                      ),
+                                      Positioned(
+                                        top: videoPlayerHeight - 50,
+                                        left: videoPlayerWidth - 50,
+                                        child: const SizedBox(
+                                          height: 80,
+                                          width: 80,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.red,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  );
-                                }
-                                return Container();
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 20,
-                        child: AnimatedOpacity(
-                          opacity: showVideoControl ? 1 : 0,
-                          curve: Curves.decelerate,
-                          duration: const Duration(
-                            milliseconds: 180,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                              return Container();
+                            },
                           ),
-                          child: MouseRegion(
-                            onEnter: (event) => setState(() {
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: AnimatedOpacity(
+                        opacity: showVideoControl ? 1 : 0,
+                        curve: Curves.decelerate,
+                        duration: const Duration(
+                          milliseconds: 180,
+                        ),
+                        child: MouseRegion(
+                          onEnter: (event) => setState(
+                            () {
                               _timer?.cancel();
                               showVideoControl = true;
-                            }),
-                            child: _ControlsOverlay(
-                              videoPlayerSize: player.state.width?.toDouble() ?? 0,
-                              player: player,
+                            },
+                          ),
+                          child: IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              size: 38,
+                              color: Colors.white,
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    Positioned(
+                      bottom: 20,
+                      child: AnimatedOpacity(
+                        opacity: showVideoControl ? 1 : 0,
+                        curve: Curves.decelerate,
+                        duration: const Duration(
+                          milliseconds: 180,
+                        ),
+                        child: MouseRegion(
+                          onEnter: (event) => setState(
+                            () {
+                              _timer?.cancel();
+                              showVideoControl = true;
+                            },
+                          ),
+                          child: _ControlsOverlay(
+                            videoPlayerSize: player.state.width?.toDouble() ?? 0,
+                            player: player,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
