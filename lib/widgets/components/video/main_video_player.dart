@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
+import 'package:extended_text/extended_text.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +15,10 @@ import 'package:window_size/window_size.dart';
 final volumeStateProvider = StateProvider<double>((ref) => 0);
 
 final showVolumeProvider = StateProvider<bool>((ref) => false);
+
+final playlistProvider = StateProvider<List<Media>>((ref) => []);
+
+final videoIndexProvider = StateProvider<int>((ref) => 0);
 
 final videoTimerProvider = StateProvider<Timer>((ref) => Timer.periodic(const Duration(milliseconds: 1200), (Timer timer) {}));
 
@@ -37,7 +43,6 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   void initState() {
     super.initState();
     setWindowTitle(Uri.decodeComponent(widget.url));
-    String basicAuth = 'Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}';
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (player.platform is NativePlayer) {
@@ -46,16 +51,18 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
           'yes',
         );
       }
+
+      var record = getPlaylist(ref, widget.url);
+      ref.read(playlistProvider.notifier).update((state) => record.$1);
+      ref.read(videoIndexProvider.notifier).update((state) => record.$2);
+
+      final playlist = Playlist(
+        record.$1,
+        index: record.$2,
+      );
+      await player.open(playlist);
     });
 
-    player.open(
-      Media(
-        ref.read(httpServerStateProvider).url + ref.read(pathStateProvider) + widget.url,
-        httpHeaders: {
-          "authorization": basicAuth,
-        },
-      ),
-    );
     _timer = Timer.periodic(_duration, (Timer timer) {});
   }
 
@@ -70,6 +77,42 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      endDrawer: Container(
+        width: 300,
+        color: const Color.fromARGB(232, 237, 237, 237),
+        child: Column(
+          children: [
+            const Text(
+              "Playlist",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ).pt(10),
+            const Divider(),
+            ...ref.watch(playlistProvider).asMap().entries.map(
+              (e) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 2.0),
+                  child: ExtendedText(
+                    e.value.uri,
+                    maxLines: 1,
+                    style: e.key == ref.watch(videoIndexProvider)
+                        ? Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)
+                        : Theme.of(context).textTheme.bodyMedium,
+                    overflowWidget: const TextOverflowWidget(
+                      position: TextOverflowPosition.start,
+                      child: Text(
+                        "...",
+                      ),
+                    ),
+                  ),
+                );
+              },
+            )
+          ],
+        ),
+      ),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -276,7 +319,7 @@ class _ControlsOverlay extends StatelessWidget {
           width: controlsOverlaySize,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: const Color.fromARGB(235, 216, 215, 215),
+            color: const Color.fromARGB(232, 216, 215, 215),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 3, 10, 11),
@@ -327,12 +370,17 @@ class _ControlsOverlay extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Positioned(
-                        top: 13,
+                      Positioned(
+                        top: 0,
                         right: 0,
-                        child: Icon(
-                          Icons.playlist_play_rounded,
-                          size: 20,
+                        child: IconButton(
+                          onPressed: () {
+                            // open end drawer
+                            Scaffold.of(context).openEndDrawer();
+                          },
+                          icon: const Icon(
+                            Icons.playlist_play_rounded,
+                          ),
                         ),
                       ),
                     ],
@@ -480,4 +528,25 @@ class EmptySliderThumb extends SliderComponentShape {
     required double textScaleFactor,
     required Size sizeWithOverflow,
   }) {}
+}
+
+(List<Media>, int) getPlaylist(WidgetRef ref, String url) {
+  String basicAuth = 'Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}';
+  String playlistPrefix = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
+  List<Media> playlist = [];
+  int index = 0;
+  for (var i = 0; i < ref.watch(videosContentStateProvider).length; i++) {
+    if (url == ref.watch(videosContentStateProvider)[i].filename) {
+      index = i;
+    }
+    playlist.add(
+      Media(
+        playlistPrefix + ref.watch(videosContentStateProvider)[i].filename,
+        httpHeaders: {
+          "authorization": basicAuth,
+        },
+      ),
+    );
+  }
+  return (playlist, index);
 }
