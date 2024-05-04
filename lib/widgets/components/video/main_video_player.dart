@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:extended_text/extended_text.dart';
 import 'package:flutter/gestures.dart';
@@ -11,6 +10,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:window_size/window_size.dart';
+
+final offSetStateProvider = StateProvider<double>((ref) => 0);
 
 final volumeStateProvider = StateProvider<double>((ref) => 0);
 
@@ -35,6 +36,8 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   Timer? _timer;
   final Duration _duration = const Duration(milliseconds: 550); // Set the duration for pointer stop
   final Duration _volumeDuration = const Duration(milliseconds: 1200); // Set the duration for pointer stop
+  double previousScrollOffset = 0;
+
   late final videoPlayerHeight = (MediaQuery.of(context).size.height) / 2, videoPlayerWidth = (MediaQuery.of(context).size.width) / 2;
   late final player = Player();
   late final controller = VideoController(player);
@@ -44,24 +47,26 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
     super.initState();
     setWindowTitle(Uri.decodeComponent(widget.url));
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (player.platform is NativePlayer) {
-        await (player.platform as dynamic).setProperty(
-          'force-seekable',
-          'yes',
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) async {
+        if (player.platform is NativePlayer) {
+          await (player.platform as dynamic).setProperty(
+            'force-seekable',
+            'yes',
+          );
+        }
+
+        var record = getPlaylist(ref, widget.url);
+        ref.read(playlistProvider.notifier).update((state) => record.$1);
+        ref.read(videoIndexProvider.notifier).update((state) => record.$2);
+
+        final playlist = Playlist(
+          record.$1,
+          index: record.$2,
         );
-      }
-
-      var record = getPlaylist(ref, widget.url);
-      ref.read(playlistProvider.notifier).update((state) => record.$1);
-      ref.read(videoIndexProvider.notifier).update((state) => record.$2);
-
-      final playlist = Playlist(
-        record.$1,
-        index: record.$2,
-      );
-      await player.open(playlist);
-    });
+        await player.open(playlist);
+      },
+    );
 
     _timer = Timer.periodic(_duration, (Timer timer) {});
   }
@@ -77,42 +82,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: Container(
-        width: 300,
-        color: const Color.fromARGB(232, 237, 237, 237),
-        child: Column(
-          children: [
-            const Text(
-              "Playlist",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ).pt(10),
-            const Divider(),
-            ...ref.watch(playlistProvider).asMap().entries.map(
-              (e) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 2.0),
-                  child: ExtendedText(
-                    e.value.uri,
-                    maxLines: 1,
-                    style: e.key == ref.watch(videoIndexProvider)
-                        ? Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)
-                        : Theme.of(context).textTheme.bodyMedium,
-                    overflowWidget: const TextOverflowWidget(
-                      position: TextOverflowPosition.start,
-                      child: Text(
-                        "...",
-                      ),
-                    ),
-                  ),
-                );
-              },
-            )
-          ],
-        ),
-      ),
+      endDrawer: PlaylistWidget(player: player),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -297,6 +267,99 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class PlaylistWidget extends ConsumerStatefulWidget {
+  const PlaylistWidget({
+    super.key,
+    required this.player,
+  });
+
+  final Player player;
+
+  @override
+  ConsumerState<PlaylistWidget> createState() => _PlaylistWidgetState();
+}
+
+class _PlaylistWidgetState extends ConsumerState<PlaylistWidget> {
+  late ScrollController scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController = ScrollController(
+      initialScrollOffset: ref.read(offSetStateProvider),
+      keepScrollOffset: false,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      scrollController.position.isScrollingNotifier.addListener(() {
+        if (!scrollController.position.isScrollingNotifier.value) {
+          ref.read(offSetStateProvider.notifier).update((state) => scrollController.offset);
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 300,
+      color: const Color.fromARGB(232, 237, 237, 237),
+      child: Column(
+        children: [
+          const Text(
+            "Playlist",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ).pt(10),
+          const Divider(),
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              itemBuilder: (context, index) {
+                Media media = ref.watch(playlistProvider)[index];
+                return GestureDetector(
+                  onDoubleTap: () async {
+                    await widget.player.jump(index).then((_) {
+                      ref.read(videoIndexProvider.notifier).update((state) => index);
+                      setWindowTitle(Uri.decodeComponent(media.uri));
+                      Navigator.of(context).pop();
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 10.0),
+                    child: ExtendedText(
+                      Uri.decodeComponent(media.uri),
+                      maxLines: 1,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: index == ref.watch(videoIndexProvider) ? FontWeight.bold : null,
+                          ),
+                      overflowWidget: const TextOverflowWidget(
+                        position: TextOverflowPosition.start,
+                        child: Text(
+                          "...",
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              itemCount: ref.watch(playlistProvider).length,
+              shrinkWrap: true,
+            ),
+          ),
+        ],
       ),
     );
   }
