@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:extended_text/extended_text.dart';
 import 'package:flutter/gestures.dart';
@@ -19,7 +20,9 @@ final showVolumeProvider = StateProvider<bool>((ref) => false);
 
 final playlistProvider = StateProvider<List<Media>>((ref) => []);
 
-final videoIndexProvider = StateProvider<int>((ref) => 0);
+// final selectedVideoProvider = StateProvider<int>((ref) => 0);
+
+final playingVideoProvider = StateProvider<int>((ref) => 0);
 
 final videoTimerProvider = StateProvider<Timer>((ref) => Timer.periodic(const Duration(milliseconds: 1200), (Timer timer) {}));
 
@@ -58,7 +61,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
 
         var record = getPlaylist(ref, widget.url);
         ref.read(playlistProvider.notifier).update((state) => record.$1);
-        ref.read(videoIndexProvider.notifier).update((state) => record.$2);
+        ref.read(playingVideoProvider.notifier).update((state) => record.$2);
 
         final playlist = Playlist(
           record.$1,
@@ -286,6 +289,7 @@ class PlaylistWidget extends ConsumerStatefulWidget {
 
 class _PlaylistWidgetState extends ConsumerState<PlaylistWidget> {
   late ScrollController scrollController;
+  int? selectedIndex;
 
   @override
   void initState() {
@@ -319,44 +323,74 @@ class _PlaylistWidgetState extends ConsumerState<PlaylistWidget> {
           const Text(
             "Playlist",
             style: TextStyle(
-              fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ).pt(10),
           const Divider(),
           Expanded(
-            child: ListView.builder(
+            child: SingleChildScrollView(
               controller: scrollController,
-              itemBuilder: (context, index) {
-                Media media = ref.watch(playlistProvider)[index];
-                return GestureDetector(
-                  onDoubleTap: () async {
-                    await widget.player.jump(index).then((_) {
-                      ref.read(videoIndexProvider.notifier).update((state) => index);
-                      setWindowTitle(Uri.decodeComponent(media.uri));
-                      Navigator.of(context).pop();
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 10.0),
-                    child: ExtendedText(
-                      Uri.decodeComponent(media.uri),
-                      maxLines: 1,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: index == ref.watch(videoIndexProvider) ? FontWeight.bold : null,
+              child: Column(
+                children: [
+                  ...ref.watch(playlistProvider).asMap().entries.map(
+                    (e) {
+                      Media media = ref.watch(playlistProvider)[e.key];
+                      bool playing = e.key == ref.watch(playingVideoProvider);
+                      return GestureDetector(
+                        onTap: () => setState(() {
+                          selectedIndex = e.key;
+                        }),
+                        onDoubleTap: () async {
+                          await widget.player.jump(e.key).then((_) {
+                            ref.read(playingVideoProvider.notifier).update((state) => e.key);
+                            setWindowTitle(Uri.decodeComponent(media.uri));
+                            Navigator.of(context).pop();
+                          });
+                        },
+                        child: Container(
+                          color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Icon(
+                                  Icons.arrow_right,
+                                  size: 26,
+                                  color: playing
+                                      ? selectedIndex == e.key
+                                          ? Colors.white
+                                          : Colors.black
+                                      : Colors.transparent,
+                                ),
+                                Expanded(
+                                  child: ExtendedText(
+                                    Uri.decodeComponent(media.uri),
+                                    maxLines: 1,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          fontSize: 13,
+                                          color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                        ),
+                                    overflowWidget: TextOverflowWidget(
+                                      position: TextOverflowPosition.start,
+                                      child: Text(
+                                        "...",
+                                        style: TextStyle(
+                                          color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ).pr(20),
+                                ),
+                              ],
+                            ),
                           ),
-                      overflowWidget: const TextOverflowWidget(
-                        position: TextOverflowPosition.start,
-                        child: Text(
-                          "...",
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-              itemCount: ref.watch(playlistProvider).length,
-              shrinkWrap: true,
+                ],
+              ),
             ),
           ),
         ],
@@ -502,18 +536,21 @@ class ProgressBar extends StatelessWidget {
         overlayColor: Colors.transparent,
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
       ),
-      child: Slider(
-        min: 0.0,
-        max: player.state.duration.inSeconds.toDouble(),
-        value: player.state.position.inSeconds.toDouble(),
-        onChangeEnd: (seekTo) async {
-          await player.seek(
-            Duration(
-              seconds: seekTo.toInt(),
-            ),
-          );
-        },
-        onChanged: (_) {},
+      child: SizedBox(
+        height: 20,
+        child: Slider(
+          min: 0.0,
+          max: player.state.duration.inSeconds.toDouble(),
+          value: player.state.position.inSeconds.toDouble(),
+          onChangeEnd: (seekTo) async {
+            await player.seek(
+              Duration(
+                seconds: seekTo.toInt(),
+              ),
+            );
+          },
+          onChanged: (_) {},
+        ),
       ),
     );
   }
@@ -546,22 +583,25 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
         overlayShape: SliderComponentShape.noOverlay,
         thumbShape: SliderComponentShape.noThumb,
       ),
-      child: Slider(
-        max: 100,
-        value: widget.player.state.volume,
-        onChanged: (value) => setState(() {
-          widget.player.setVolume(value);
-          ref.read(volumeStateProvider.notifier).update((state) => value);
-          ref.read(showVolumeProvider.notifier).update((state) => true);
-          setState(() {});
-          ref.read(videoTimerProvider.notifier).state.cancel();
-          ref.read(videoTimerProvider.notifier).state = Timer(const Duration(milliseconds: 1200), () {
-            ref.read(showVolumeProvider.notifier).update((state) => false);
+      child: SizedBox(
+        height: 20,
+        child: Slider(
+          max: 100,
+          value: widget.player.state.volume,
+          onChanged: (value) => setState(() {
+            widget.player.setVolume(value);
+            ref.read(volumeStateProvider.notifier).update((state) => value);
+            ref.read(showVolumeProvider.notifier).update((state) => true);
             setState(() {});
-          });
-        }),
-        activeColor: const Color.fromARGB(255, 96, 154, 254),
-        inactiveColor: const Color.fromARGB(228, 222, 222, 222),
+            ref.read(videoTimerProvider.notifier).state.cancel();
+            ref.read(videoTimerProvider.notifier).state = Timer(const Duration(milliseconds: 1200), () {
+              ref.read(showVolumeProvider.notifier).update((state) => false);
+              setState(() {});
+            });
+          }),
+          activeColor: const Color.fromARGB(255, 96, 154, 254),
+          inactiveColor: const Color.fromARGB(228, 222, 222, 222),
+        ),
       ),
     );
   }
