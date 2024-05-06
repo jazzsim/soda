@@ -15,7 +15,10 @@ import '../../widgets/components/video/thumbnail.dart';
 import '../home_page.dart';
 
 final sidebarStateProvider = StateProvider<bool>((ref) => true);
+
 final contentVisibleStateProvider = StateProvider<bool>((ref) => true);
+
+final titleBarHeight = StateProvider<int>((ref) => 0);
 
 class HomePageDekstop extends ConsumerStatefulWidget {
   const HomePageDekstop({super.key});
@@ -59,7 +62,7 @@ class _HomePageDekstopState extends ConsumerState<HomePageDekstop> with SingleTi
                           ),
                         ],
                       ).py(12),
-                    ),
+                    ).pt(ref.watch(titleBarHeight)),
                     ...ref.watch(serverListStateProvider).asMap().entries.map(
                           (e) => ListTile(
                             leading: const Icon(
@@ -90,7 +93,7 @@ class _HomePageDekstopState extends ConsumerState<HomePageDekstop> with SingleTi
                           ).pa(20),
                         )
                       : const PageContentSectionDesktop(),
-                ).pltrb(40, 10, 20, 0),
+                ).pltrb(40, 10 + ref.watch(titleBarHeight), 20, 0),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
@@ -148,7 +151,7 @@ class _PageContentSectionDesktopState extends ConsumerState<PageContentSectionDe
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(
-          ref.watch(pathStateProvider),
+          Uri.decodeComponent(ref.watch(pathStateProvider)),
           style: Theme.of(context).textTheme.titleLarge,
         ).pltrb(10, 10, 0, 10),
         Row(

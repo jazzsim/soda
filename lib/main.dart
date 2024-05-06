@@ -4,11 +4,23 @@ import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:soda/constants/colours.dart';
 import 'package:soda/pages/home_page.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'providers/preferences_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Must add this line.
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = const WindowOptions(
+    center: true,
+  );
+
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+  });
 
   await PreferencesService.initialize();
   MediaKit.ensureInitialized();

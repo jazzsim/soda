@@ -1,30 +1,29 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:extended_text/extended_text.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
+import 'package:soda/pages/desktop/home_page.d.dart';
+import 'package:soda/pages/home_page.dart';
 import 'package:soda/widgets/extensions/padding.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:window_size/window_size.dart';
 
 final offSetStateProvider = StateProvider<double>((ref) => 0);
-
-final volumeStateProvider = StateProvider<double>((ref) => 0);
 
 final showVolumeProvider = StateProvider<bool>((ref) => false);
 
 final playlistProvider = StateProvider<List<Media>>((ref) => []);
 
-// final selectedVideoProvider = StateProvider<int>((ref) => 0);
-
 final playingVideoProvider = StateProvider<int>((ref) => 0);
 
-final videoTimerProvider = StateProvider<Timer>((ref) => Timer.periodic(const Duration(milliseconds: 1200), (Timer timer) {}));
+final videoTimerProvider = StateProvider<Timer?>((ref) => null);
 
 class MainVideoPlayer extends ConsumerStatefulWidget {
   final String url;
@@ -35,11 +34,10 @@ class MainVideoPlayer extends ConsumerStatefulWidget {
 }
 
 class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
-  bool showVideoControl = false, isFullScreen = false;
+  bool showVideoControl = false;
   Timer? _timer;
   final Duration _duration = const Duration(milliseconds: 550); // Set the duration for pointer stop
   final Duration _volumeDuration = const Duration(milliseconds: 1200); // Set the duration for pointer stop
-  double previousScrollOffset = 0;
 
   late final videoPlayerHeight = (MediaQuery.of(context).size.height) / 2, videoPlayerWidth = (MediaQuery.of(context).size.width) / 2;
   late final player = Player();
@@ -48,7 +46,6 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   @override
   void initState() {
     super.initState();
-    setWindowTitle(Uri.decodeComponent(widget.url));
 
     WidgetsBinding.instance.addPostFrameCallback(
       (_) async {
@@ -57,6 +54,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
             'force-seekable',
             'yes',
           );
+          player.setVolume(ref.read(volumeStateProvider));
         }
 
         var record = getPlaylist(ref, widget.url);
@@ -76,199 +74,221 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
 
   @override
   void dispose() {
-    setWindowTitle("Soda");
-    player.pause();
+    player.stop();
     player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      endDrawer: PlaylistWidget(player: player),
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Listener(
-                      onPointerSignal: (pointerSignal) {
-                        if (pointerSignal is PointerScrollEvent) {
-                          // do something when scrolled
-                          double currentVolume = player.state.volume;
-                          if (pointerSignal.scrollDelta.dy < 0) {
-                            if (currentVolume + 2.0 > 100) {
-                              player.setVolume(100);
+    return MaterialDesktopVideoControlsTheme(
+      normal: MaterialDesktopVideoControlsThemeData(
+        displaySeekBar: false,
+        bottomButtonBar: [],
+        modifyVolumeOnScroll: false,
+        bufferingIndicatorBuilder: (context) => Container(),
+        keyboardShortcuts: {},
+      ),
+      fullscreen: MaterialDesktopVideoControlsThemeData(
+        displaySeekBar: false,
+        bottomButtonBar: [],
+        bufferingIndicatorBuilder: (context) => Container(),
+        keyboardShortcuts: {},
+      ),
+      child: Scaffold(
+        endDrawer: PlaylistWidget(player: player),
+        body: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      Listener(
+                        onPointerDown: (event) {
+                          windowManager.startDragging();
+                        },
+                        onPointerSignal: (pointerSignal) {
+                          if (pointerSignal is PointerScrollEvent) {
+                            // do something when scrolled
+                            double currentVolume = player.state.volume;
+                            if (pointerSignal.scrollDelta.dy < 0) {
+                              if (currentVolume + 2.0 > 100) {
+                                player.setVolume(100);
+                              } else {
+                                player.setVolume(currentVolume + 2.0);
+                              }
                             } else {
-                              player.setVolume(currentVolume + 2.0);
+                              if (currentVolume - 2.0 < 0) {
+                                player.setVolume(0);
+                              } else {
+                                player.setVolume(currentVolume - 2.0);
+                              }
                             }
-                          } else {
-                            if (currentVolume - 2.0 < 0) {
-                              player.setVolume(0);
-                            } else {
-                              player.setVolume(currentVolume - 2.0);
-                            }
+                            ref.read(volumeStateProvider.notifier).update((state) => player.state.volume);
+                            ref.read(showVolumeProvider.notifier).update((state) => true);
                           }
-                          ref.read(volumeStateProvider.notifier).update((state) => player.state.volume);
-                          ref.read(showVolumeProvider.notifier).update((state) => true);
+                        },
+                        onPointerHover: (event) {
+                          showVideoControl = true;
                           setState(() {});
-                          ref.read(videoTimerProvider.notifier).state.cancel();
-                          ref.read(videoTimerProvider.notifier).state = Timer(_volumeDuration, () {
-                            ref.read(showVolumeProvider.notifier).update((state) => false);
+                          _timer?.cancel();
+                          _timer = Timer(_duration, () {
+                            showVideoControl = false;
                             setState(() {});
                           });
-                        }
-                      },
-                      onPointerHover: (event) {
-                        showVideoControl = true;
-                        setState(() {});
-                        _timer?.cancel();
-                        _timer = Timer(_duration, () {
-                          showVideoControl = false;
-                          setState(() {});
-                        });
-                      },
-                      // loading view
-                      child: Stack(
-                        children: [
-                          Video(
-                            controller: controller,
-                            controls: (state) {
-                              return GestureDetector(
-                                onDoubleTap: () {
-                                  state.toggleFullscreen();
-                                },
-                                onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
-                              );
-                            },
-                          ),
-                          StreamBuilder(
-                            stream: player.stream.buffering,
-                            builder: (context, snapshot) {
-                              if (snapshot.data == true) {
+                        },
+                        // loading view
+                        child: Stack(
+                          children: [
+                            Video(
+                              controller: controller,
+                              controls: (state) {
                                 return GestureDetector(
+                                  onDoubleTap: () {
+                                    state.toggleFullscreen();
+                                  },
                                   onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        color: Colors.black26,
-                                      ),
-                                      Positioned(
-                                        top: videoPlayerHeight - 50,
-                                        left: videoPlayerWidth - 50,
-                                        child: const SizedBox(
-                                          height: 80,
-                                          width: 80,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  child: CallbackShortcuts(
+                                    bindings: getShortcuts(state, context, ref, player),
+                                    child: MaterialDesktopVideoControls(state),
                                   ),
                                 );
-                              }
-                              return Container();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      top: 70,
-                      left: 30,
-                      child: AnimatedOpacity(
-                        opacity: ref.watch(showVolumeProvider) ? 1 : 0,
-                        curve: Curves.decelerate,
-                        duration: const Duration(
-                          milliseconds: 180,
-                        ),
-                        child: Container(
-                          width: 140,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(
-                              12,
+                              },
                             ),
-                            color: const Color.fromARGB(237, 238, 238, 238),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Volume: ${ref.watch(volumeStateProvider).floorToDouble().round()}",
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
-                              ),
-                              SizedBox(
-                                width: 115,
-                                child: LinearProgressIndicator(
-                                  value: player.state.volume / 100,
-                                  color: Colors.blue,
-                                ).pt(5),
-                              ),
-                            ],
-                          ).pltrb(12, 8, 12, 12),
+                            StreamBuilder(
+                              stream: player.stream.buffering,
+                              builder: (context, snapshot) {
+                                if (snapshot.data == true) {
+                                  return GestureDetector(
+                                    onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          color: Colors.black26,
+                                        ),
+                                        Positioned(
+                                          top: videoPlayerHeight - 50,
+                                          left: videoPlayerWidth - 50,
+                                          child: const SizedBox(
+                                            height: 80,
+                                            width: 80,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                                return Container();
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: AnimatedOpacity(
-                        opacity: showVideoControl ? 1 : 0,
-                        curve: Curves.decelerate,
-                        duration: const Duration(
-                          milliseconds: 180,
-                        ),
-                        child: MouseRegion(
-                          onEnter: (event) => setState(
-                            () {
-                              _timer?.cancel();
-                              showVideoControl = true;
-                            },
+                      Positioned(
+                        top: 85,
+                        left: 30,
+                        child: AnimatedOpacity(
+                          onEnd: () {
+                            ref.read(videoTimerProvider)?.cancel();
+                            ref.read(videoTimerProvider.notifier).state = Timer(_volumeDuration, () {
+                              ref.read(showVolumeProvider.notifier).update((state) => false);
+                              setState(() {});
+                            });
+                          },
+                          opacity: ref.watch(showVolumeProvider) ? 1 : 0,
+                          curve: Curves.decelerate,
+                          duration: const Duration(
+                            milliseconds: 180,
                           ),
-                          child: IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              size: 38,
-                              color: Colors.white,
+                          child: Container(
+                            width: 140,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                12,
+                              ),
+                              color: const Color.fromARGB(237, 238, 238, 238),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Volume: ${ref.watch(volumeStateProvider).floorToDouble().round()}",
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
+                                ),
+                                SizedBox(
+                                  width: 115,
+                                  child: LinearProgressIndicator(
+                                    value: player.state.volume / 100,
+                                    color: Colors.blue,
+                                  ).pt(5),
+                                ),
+                              ],
+                            ).pltrb(12, 8, 12, 12),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: ref.read(titleBarHeight).toDouble(),
+                        left: 10,
+                        child: AnimatedOpacity(
+                          opacity: showVideoControl ? 1 : 0,
+                          curve: Curves.decelerate,
+                          duration: const Duration(
+                            milliseconds: 180,
+                          ),
+                          child: MouseRegion(
+                            onEnter: (event) => setState(
+                              () {
+                                _timer?.cancel();
+                                showVideoControl = true;
+                              },
+                            ),
+                            child: IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                size: 38,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      child: AnimatedOpacity(
-                        opacity: showVideoControl ? 1 : 0,
-                        curve: Curves.decelerate,
-                        duration: const Duration(
-                          milliseconds: 180,
-                        ),
-                        child: MouseRegion(
-                          onEnter: (event) => setState(
-                            () {
-                              _timer?.cancel();
-                              showVideoControl = true;
-                            },
+                      Positioned(
+                        bottom: 20,
+                        child: AnimatedOpacity(
+                          opacity: showVideoControl ? 1 : 0,
+                          curve: Curves.decelerate,
+                          duration: const Duration(
+                            milliseconds: 180,
                           ),
-                          child: _ControlsOverlay(
-                            videoPlayerSize: player.state.width?.toDouble() ?? 0,
-                            player: player,
+                          child: MouseRegion(
+                            onEnter: (event) => setState(
+                              () {
+                                _timer?.cancel();
+                                showVideoControl = true;
+                              },
+                            ),
+                            child: _ControlsOverlay(
+                              videoPlayerSize: player.state.width?.toDouble() ?? 0,
+                              player: player,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -332,10 +352,10 @@ class _PlaylistWidgetState extends ConsumerState<PlaylistWidget> {
               controller: scrollController,
               child: Column(
                 children: [
-                  ...ref.watch(playlistProvider).asMap().entries.map(
+                  ...ref.read(playlistProvider).asMap().entries.map(
                     (e) {
-                      Media media = ref.watch(playlistProvider)[e.key];
-                      bool playing = e.key == ref.watch(playingVideoProvider);
+                      Media media = ref.read(playlistProvider)[e.key];
+                      bool playing = e.key == ref.read(playingVideoProvider);
                       return GestureDetector(
                         onTap: () => setState(() {
                           selectedIndex = e.key;
@@ -343,7 +363,6 @@ class _PlaylistWidgetState extends ConsumerState<PlaylistWidget> {
                         onDoubleTap: () async {
                           await widget.player.jump(e.key).then((_) {
                             ref.read(playingVideoProvider.notifier).update((state) => e.key);
-                            setWindowTitle(Uri.decodeComponent(media.uri));
                             Navigator.of(context).pop();
                           });
                         },
@@ -587,17 +606,12 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
         height: 20,
         child: Slider(
           max: 100,
-          value: widget.player.state.volume,
+          value: ref.watch(volumeStateProvider) ?? widget.player.state.volume,
           onChanged: (value) => setState(() {
             widget.player.setVolume(value);
             ref.read(volumeStateProvider.notifier).update((state) => value);
             ref.read(showVolumeProvider.notifier).update((state) => true);
             setState(() {});
-            ref.read(videoTimerProvider.notifier).state.cancel();
-            ref.read(videoTimerProvider.notifier).state = Timer(const Duration(milliseconds: 1200), () {
-              ref.read(showVolumeProvider.notifier).update((state) => false);
-              setState(() {});
-            });
           }),
           activeColor: const Color.fromARGB(255, 96, 154, 254),
           inactiveColor: const Color.fromARGB(228, 222, 222, 222),
@@ -633,18 +647,62 @@ class EmptySliderThumb extends SliderComponentShape {
   }) {}
 }
 
+Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext context, WidgetRef ref, Player player) {
+  return {
+    const SingleActivator(LogicalKeyboardKey.space): () async {
+      await player.playOrPause();
+    },
+    const SingleActivator(LogicalKeyboardKey.arrowLeft): () async {
+      await player.seek(
+        player.state.position - const Duration(seconds: 2),
+      );
+    },
+    const SingleActivator(LogicalKeyboardKey.arrowRight): () async {
+      await player.seek(
+        player.state.position + const Duration(seconds: 2),
+      );
+    },
+    const SingleActivator(LogicalKeyboardKey.arrowUp): () async {
+      double currentVolume = player.state.volume;
+      if (currentVolume + 2.0 > 100) {
+        await player.setVolume(100);
+      } else {
+        await player.setVolume(currentVolume + 2.0).then((value) {});
+      }
+      ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 2.0);
+      ref.read(showVolumeProvider.notifier).update((state) => true);
+    },
+    const SingleActivator(LogicalKeyboardKey.arrowDown): () async {
+      double currentVolume = player.state.volume;
+      if (currentVolume - 2.0 < 0) {
+        await player.setVolume(0);
+      } else {
+        await player.setVolume(currentVolume - 2.0);
+      }
+      ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 2.0);
+      ref.read(showVolumeProvider.notifier).update((state) => true);
+    },
+    const SingleActivator(LogicalKeyboardKey.keyF): () async {
+      state.toggleFullscreen();
+    },
+    const SingleActivator(LogicalKeyboardKey.keyN): () async {
+      await player.next();
+    }
+  };
+}
+
 (List<Media>, int) getPlaylist(WidgetRef ref, String url) {
   String basicAuth = 'Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}';
   String playlistPrefix = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
   List<Media> playlist = [];
   int index = 0;
-  for (var i = 0; i < ref.watch(videosContentStateProvider).length; i++) {
-    if (url == ref.watch(videosContentStateProvider)[i].filename) {
+  for (var i = 0; i < ref.read(videosContentStateProvider).length; i++) {
+    if (url == ref.read(videosContentStateProvider)[i].filename) {
       index = i;
     }
     playlist.add(
       Media(
-        playlistPrefix + ref.watch(videosContentStateProvider)[i].filename,
+        playlistPrefix + ref.read(videosContentStateProvider)[i].filename,
         httpHeaders: {
           "authorization": basicAuth,
         },

@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../controllers/content_controller.dart';
 import '../providers/preferences_service.dart';
@@ -12,8 +15,25 @@ import 'tablet/home_page.t.dart';
 
 final selectedIndexStateProvvider = StateProvider<int?>((ref) => null);
 
-class HomePage extends StatelessWidget {
+final volumeStateProvider = StateProvider<double>((ref) => 100);
+
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
+
+  @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      int height = await windowManager.getTitleBarHeight();
+      ref.read(titleBarHeight.notifier).update((state) => height);
+      windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

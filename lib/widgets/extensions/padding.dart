@@ -1,58 +1,58 @@
 import 'package:flutter/material.dart';
 
 extension WidgetPaddingExtension on Widget {
-  Widget pa(double padding) {
+  Widget pa(num padding) {
     return Padding(
-      padding: EdgeInsets.all(padding),
+      padding: EdgeInsets.all(padding.toDouble()),
       child: this,
     );
   }
 
-  Widget pl(double padding) {
+  Widget pl(num padding) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(padding, 0, 0, 0),
+      padding: EdgeInsets.fromLTRB(padding.toDouble(), 0, 0, 0),
       child: this,
     );
   }
 
-  Widget pt(double padding) {
+  Widget pt(num padding) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(0, padding, 0, 0),
+      padding: EdgeInsets.fromLTRB(0, padding.toDouble(), 0, 0),
       child: this,
     );
   }
 
-  Widget pr(double padding) {
+  Widget pr(num padding) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(0, 0, padding, 0),
+      padding: EdgeInsets.fromLTRB(0, 0, padding.toDouble(), 0),
       child: this,
     );
   }
 
-  Widget pb(double padding) {
+  Widget pb(num padding) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(0, 0, 0, padding),
+      padding: EdgeInsets.fromLTRB(0, 0, 0, padding.toDouble()),
       child: this,
     );
   }
 
-  Widget px(double padding) {
+  Widget px(num padding) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: padding),
+      padding: EdgeInsets.symmetric(horizontal: padding.toDouble()),
       child: this,
     );
   }
 
-  Widget py(double padding) {
+  Widget py(num padding) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: padding),
+      padding: EdgeInsets.symmetric(vertical: padding.toDouble()),
       child: this,
     );
   }
 
-  Widget pltrb(double leftpad, double toppad, double rightpad, double bottompad) {
+  Widget pltrb(num leftpad, num toppad, num rightpad, num bottompad) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(leftpad, toppad, rightpad, bottompad),
+      padding: EdgeInsets.fromLTRB(leftpad.toDouble(), toppad.toDouble(), rightpad.toDouble(), bottompad.toDouble()),
       child: this,
     );
   }
