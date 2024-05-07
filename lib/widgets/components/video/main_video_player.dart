@@ -461,16 +461,17 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
   }
 }
 
-class SettingTab extends StatefulWidget {
+class SettingTab extends ConsumerStatefulWidget {
   final Player player;
   const SettingTab(this.player, {super.key});
 
   @override
-  State<SettingTab> createState() => _SettingTabState();
+  ConsumerState<SettingTab> createState() => _SettingTabState();
 }
 
-class _SettingTabState extends State<SettingTab> {
+class _SettingTabState extends ConsumerState<SettingTab> {
   late final List<SubtitleTrack> subtitles;
+  int? selectedIndex;
 
   @override
   void initState() {
@@ -496,10 +497,50 @@ class _SettingTabState extends State<SettingTab> {
           SingleChildScrollView(
             child: Column(
               children: [
-                ...subtitles.map(
-                  (e) => Text(
-                    "${e}",
-                  ),
+                ...subtitles.asMap().entries.map(
+                  (e) {
+                    SubtitleTrack subtitleTrack = subtitles[e.key];
+                    bool loaded = e.value.id == widget.player.state.track.subtitle.id;
+                    return GestureDetector(
+                      onDoubleTap: () async => setState(() async {
+                        await widget.player.setSubtitleTrack(e.value);
+                      }),
+                      child: Listener(
+                        onPointerDown: (_) => setState(() {
+                          selectedIndex = e.key;
+                        }),
+                        child: Container(
+                          color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Icon(
+                                  Icons.arrow_right,
+                                  size: 26,
+                                  color: loaded
+                                      ? selectedIndex == e.key
+                                          ? Colors.white
+                                          : Colors.black
+                                      : Colors.transparent,
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    subtitleTrack.id,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          fontSize: 13,
+                                          color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                        ),
+                                  ).pr(20),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
