@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:extended_text/extended_text.dart';
 import 'package:flutter/gestures.dart';
@@ -36,7 +37,7 @@ class MainVideoPlayer extends ConsumerStatefulWidget {
 class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   bool showVideoControl = false;
   Timer? _timer;
-  final Duration _duration = const Duration(milliseconds: 550); // Set the duration for pointer stop
+  final Duration _duration = const Duration(milliseconds: 850); // Set the duration for pointer stop
   final Duration _volumeDuration = const Duration(milliseconds: 1200); // Set the duration for pointer stop
 
   late final videoPlayerHeight = (MediaQuery.of(context).size.height) / 2, videoPlayerWidth = (MediaQuery.of(context).size.width) / 2;
@@ -96,7 +97,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
         keyboardShortcuts: {},
       ),
       child: Scaffold(
-        endDrawer: PlaylistWidget(player: player),
+        endDrawer: EndDrawerWidget(player: player),
         body: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -295,8 +296,8 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   }
 }
 
-class PlaylistWidget extends ConsumerStatefulWidget {
-  const PlaylistWidget({
+class EndDrawerWidget extends ConsumerStatefulWidget {
+  const EndDrawerWidget({
     super.key,
     required this.player,
   });
@@ -304,10 +305,65 @@ class PlaylistWidget extends ConsumerStatefulWidget {
   final Player player;
 
   @override
-  ConsumerState<PlaylistWidget> createState() => _PlaylistWidgetState();
+  ConsumerState<EndDrawerWidget> createState() => _EndDrawerWidgetState();
 }
 
-class _PlaylistWidgetState extends ConsumerState<PlaylistWidget> {
+class _EndDrawerWidgetState extends ConsumerState<EndDrawerWidget> {
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      initialIndex: 0,
+      length: 2,
+      child: Container(
+        width: 300,
+        color: const Color.fromARGB(232, 237, 237, 237),
+        child: Column(
+          children: [
+            TabBar(
+              tabs: <Widget>[
+                Tab(
+                  child: const Text(
+                    "Playlist",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ).pt(10),
+                ),
+                Tab(
+                  child: const Text(
+                    "Settings",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ).pt(10),
+                ),
+              ],
+            ),
+            // const Divider(),
+            Expanded(
+              child: TabBarView(
+                children: <Widget>[
+                  PlaylistTab(widget.player),
+                  SettingTab(widget.player),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PlaylistTab extends ConsumerStatefulWidget {
+  final Player player;
+  const PlaylistTab(this.player, {super.key});
+
+  @override
+  ConsumerState<PlaylistTab> createState() => _PlaylistTabState();
+}
+
+class _PlaylistTabState extends ConsumerState<PlaylistTab> {
   late ScrollController scrollController;
   int? selectedIndex;
 
@@ -335,81 +391,117 @@ class _PlaylistWidgetState extends ConsumerState<PlaylistWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 300,
-      color: const Color.fromARGB(232, 237, 237, 237),
+    return SingleChildScrollView(
+      controller: scrollController,
       child: Column(
         children: [
-          const Text(
-            "Playlist",
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-            ),
-          ).pt(10),
-          const Divider(),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Column(
-                children: [
-                  ...ref.read(playlistProvider).asMap().entries.map(
-                    (e) {
-                      Media media = ref.read(playlistProvider)[e.key];
-                      bool playing = e.key == ref.read(playingVideoProvider);
-                      return GestureDetector(
-                        onTap: () => setState(() {
-                          selectedIndex = e.key;
-                        }),
-                        onDoubleTap: () async {
-                          await widget.player.jump(e.key).then((_) {
-                            ref.read(playingVideoProvider.notifier).update((state) => e.key);
-                            Navigator.of(context).pop();
-                          });
-                        },
-                        child: Container(
-                          color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Icon(
-                                  Icons.arrow_right,
-                                  size: 26,
-                                  color: playing
-                                      ? selectedIndex == e.key
-                                          ? Colors.white
-                                          : Colors.black
-                                      : Colors.transparent,
-                                ),
-                                Expanded(
-                                  child: ExtendedText(
-                                    Uri.decodeComponent(media.uri),
-                                    maxLines: 1,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          fontSize: 13,
-                                          color: selectedIndex == e.key ? Colors.white : Colors.black,
-                                        ),
-                                    overflowWidget: TextOverflowWidget(
-                                      position: TextOverflowPosition.start,
-                                      child: Text(
-                                        "...",
-                                        style: TextStyle(
-                                          color: selectedIndex == e.key ? Colors.white : Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                  ).pr(20),
-                                ),
-                              ],
-                            ),
+          ...ref.read(playlistProvider).asMap().entries.map(
+            (e) {
+              Media media = ref.read(playlistProvider)[e.key];
+              bool playing = e.key == ref.read(playingVideoProvider);
+              return GestureDetector(
+                onDoubleTap: () async {
+                  await widget.player.jump(e.key).then((_) {
+                    ref.read(playingVideoProvider.notifier).update((state) => e.key);
+                    Navigator.of(context).pop();
+                  });
+                },
+                child: Listener(
+                  onPointerDown: (_) {
+                    setState(() {
+                      selectedIndex = e.key;
+                    });
+                  },
+                  child: Container(
+                    color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(
+                            Icons.arrow_right,
+                            size: 26,
+                            color: playing
+                                ? selectedIndex == e.key
+                                    ? Colors.white
+                                    : Colors.black
+                                : Colors.transparent,
                           ),
-                        ),
-                      );
-                    },
+                          Expanded(
+                            child: ExtendedText(
+                              Uri.decodeComponent(media.uri),
+                              maxLines: 1,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 13,
+                                    color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                  ),
+                              overflowWidget: TextOverflowWidget(
+                                position: TextOverflowPosition.start,
+                                child: Text(
+                                  "...",
+                                  style: TextStyle(
+                                    color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ).pr(20),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingTab extends StatefulWidget {
+  final Player player;
+  const SettingTab(this.player, {super.key});
+
+  @override
+  State<SettingTab> createState() => _SettingTabState();
+}
+
+class _SettingTabState extends State<SettingTab> {
+  late final List<SubtitleTrack> subtitles;
+
+  @override
+  void initState() {
+    super.initState();
+    subtitles = widget.player.state.tracks.subtitle;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 400,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(
+          12,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            "Subtitles",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+          ),
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                ...subtitles.map(
+                  (e) => Text(
+                    "${e}",
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -435,7 +527,7 @@ class _ControlsOverlay extends StatelessWidget {
           width: controlsOverlaySize,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: const Color.fromARGB(232, 216, 215, 215),
+            color: const Color.fromARGB(240, 243, 243, 243),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 3, 10, 11),
@@ -496,6 +588,7 @@ class _ControlsOverlay extends StatelessWidget {
                           },
                           icon: const Icon(
                             Icons.playlist_play_rounded,
+                            size: 20,
                           ),
                         ),
                       ),
