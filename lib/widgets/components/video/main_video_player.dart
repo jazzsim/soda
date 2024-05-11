@@ -1,20 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:extended_text/extended_text.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:media_kit_video/media_kit_video_controls/media_kit_video_controls.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
 import 'package:soda/pages/home_page.dart';
 import 'package:soda/widgets/extensions/padding.dart';
+import 'package:soda/widgets/extensions/row.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:window_size/window_size.dart';
 
 final offSetStateProvider = StateProvider<double>((ref) => 0);
 
@@ -146,6 +149,8 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                         child: Stack(
                           children: [
                             Video(
+                              wakelock: false,
+                              subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
                               controller: controller,
                               controls: (state) {
                                 return GestureDetector(
@@ -261,6 +266,29 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                             ),
                           ),
                         ),
+                      ),
+                      Positioned(
+                        bottom: 20,
+                        child: StreamBuilder<List<String>>(
+                            stream: player.stream.subtitle,
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                for (var element in snapshot.data ?? []) {
+                                  return Stack(
+                                    children: [
+                                      Text(
+                                        element,
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: Colors.yellow,
+                                              fontSize: 34,
+                                            ),
+                                      ),
+                                    ],
+                                  );
+                                }
+                              }
+                              return Container();
+                            }),
                       ),
                       Positioned(
                         bottom: 20,
@@ -470,83 +498,158 @@ class SettingTab extends ConsumerStatefulWidget {
 }
 
 class _SettingTabState extends ConsumerState<SettingTab> {
-  late final List<SubtitleTrack> subtitles;
+  List<SubtitleTrack> subtitles = [];
   int? selectedIndex;
 
   @override
   void initState() {
     super.initState();
-    subtitles = widget.player.state.tracks.subtitle;
+
+    widget.player.stream.subtitle.listen((event) {
+      for (var element in event) {
+        log(element);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 400,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(
-          12,
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            "Subtitles",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-          ),
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                ...subtitles.asMap().entries.map(
-                  (e) {
-                    SubtitleTrack subtitleTrack = subtitles[e.key];
-                    bool loaded = e.value.id == widget.player.state.track.subtitle.id;
-                    return GestureDetector(
-                      onDoubleTap: () async => setState(() async {
-                        await widget.player.setSubtitleTrack(e.value);
-                      }),
-                      child: Listener(
-                        onPointerDown: (_) => setState(() {
-                          selectedIndex = e.key;
-                        }),
-                        child: Container(
-                          color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Icon(
-                                  Icons.arrow_right,
-                                  size: 26,
-                                  color: loaded
-                                      ? selectedIndex == e.key
-                                          ? Colors.white
-                                          : Colors.black
-                                      : Colors.transparent,
+    subtitles.isNotEmpty ? subtitles.clear() : null;
+    subtitles.addAll(widget.player.state.tracks.subtitle);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 150,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Subtitles",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ).pltrb(15, 15, 0, 0),
+              Flexible(
+                child: StreamBuilder<Tracks>(
+                  stream: widget.player.stream.tracks,
+                  builder: (context, snapshot) => Column(
+                    children: [
+                      ...(snapshot.data?.subtitle ?? subtitles).asMap().entries.map((e) {
+                        late SubtitleTrack subtitleTrack;
+                        late bool loaded;
+                        if (snapshot.data?.subtitle == null) {
+                          subtitleTrack = subtitles[e.key];
+                          if (widget.player.state.track.subtitle.title == null) {
+                            loaded = e.value.id == widget.player.state.track.subtitle.id;
+                          } else {
+                            loaded = e.value.title == widget.player.state.track.subtitle.title;
+                          }
+                        } else {
+                          subtitleTrack = widget.player.state.tracks.subtitle[e.key];
+                          loaded = e.value.title == widget.player.state.track.subtitle.title;
+                        }
+
+                        return GestureDetector(
+                          onDoubleTap: () async {
+                            await widget.player.setSubtitleTrack(e.value);
+                            setState(() {});
+                          },
+                          child: Listener(
+                            onPointerDown: (_) => setState(() {
+                              selectedIndex = e.key;
+                            }),
+                            child: Container(
+                              color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 0.5),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Icon(
+                                      Icons.arrow_right,
+                                      size: 26,
+                                      color: loaded
+                                          ? selectedIndex == e.key
+                                              ? Colors.white
+                                              : Colors.black
+                                          : Colors.transparent,
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        subtitleTrack.title ?? subtitleTrack.id,
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              fontSize: 13,
+                                              color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                            ),
+                                      ).pr(20),
+                                    ),
+                                  ],
                                 ),
-                                Expanded(
-                                  child: Text(
-                                    subtitleTrack.id,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          fontSize: 13,
-                                          color: selectedIndex == e.key ? Colors.white : Colors.black,
-                                        ),
-                                  ).pr(20),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        Text(
+          "External Subtitles",
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ).pltrb(15, 15, 0, 10),
+        TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: const Color.fromARGB(255, 190, 190, 190),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
-        ],
-      ),
+          onPressed: () {},
+          child: Text(
+            "Browse from this server",
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ).btnRow(15),
+        const SizedBox(
+          height: 10,
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            backgroundColor: const Color.fromARGB(255, 190, 190, 190),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+          onPressed: () async {
+            FilePickerResult? result = await FilePicker.platform.pickFiles(
+              type: FileType.custom,
+              allowedExtensions: ['srt', 'ass', 'sub', 'vtt', '.ssa'],
+            );
+
+            if (result != null) {
+              File file = File(result.files.single.path!);
+              await widget.player.setSubtitleTrack(
+                SubtitleTrack.data(
+                  file.readAsStringSync(),
+                  title: file.path.split('/').last,
+                ),
+              );
+
+              setState(() {});
+            }
+          },
+          child: Text(
+            "Browse from local file",
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ).btnRow(15),
+      ],
     );
   }
 }
