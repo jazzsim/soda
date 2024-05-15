@@ -63,6 +63,7 @@ dependencies:
   extended_text: ^13.0.0
   window_manager: ^0.3.8
   file_picker: ^8.0.3
+  anydrawer: ^1.0.6
 
 dev_dependencies:
   flutter_test:
