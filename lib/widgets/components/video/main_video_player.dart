@@ -69,58 +69,43 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialDesktopVideoControlsTheme(
-      normal: MaterialDesktopVideoControlsThemeData(
-        displaySeekBar: false,
-        bottomButtonBar: [],
-        modifyVolumeOnScroll: false,
-        bufferingIndicatorBuilder: (context) => BufferingWidget(player: player),
-        keyboardShortcuts: {},
-      ),
-      fullscreen: MaterialDesktopVideoControlsThemeData(
-        displaySeekBar: false,
-        bottomButtonBar: [],
-        bufferingIndicatorBuilder: (context) => BufferingWidget(player: player),
-        keyboardShortcuts: {},
-      ),
-      child: Scaffold(
-        endDrawer: EndDrawerWidget(player: player),
-        body: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      Stack(
-                        children: [
-                          Video(
-                            wakelock: false,
-                            subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
-                            controller: controller,
-                            controls: (state) {
-                              return Stack(
-                                children: [
-                                  BufferingWidget(player: player),
-                                  VideoControlWidget(
-                                    player: player,
-                                    state: state,
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+    return Scaffold(
+      endDrawer: EndDrawerWidget(player: player),
+      body: SafeArea(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    Stack(
+                      children: [
+                        Video(
+                          wakelock: false,
+                          subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
+                          controller: controller,
+                          controls: (state) {
+                            return Stack(
+                              children: [
+                                BufferingWidget(player: player),
+                                VideoControlWidget(
+                                  player: player,
+                                  state: state,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
