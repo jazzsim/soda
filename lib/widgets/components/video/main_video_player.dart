@@ -74,13 +74,13 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
         displaySeekBar: false,
         bottomButtonBar: [],
         modifyVolumeOnScroll: false,
-        bufferingIndicatorBuilder: (context) => Container(),
+        bufferingIndicatorBuilder: (context) => BufferingWidget(player: player),
         keyboardShortcuts: {},
       ),
       fullscreen: MaterialDesktopVideoControlsThemeData(
         displaySeekBar: false,
         bottomButtonBar: [],
-        bufferingIndicatorBuilder: (context) => Container(),
+        bufferingIndicatorBuilder: (context) => BufferingWidget(player: player),
         keyboardShortcuts: {},
       ),
       child: Scaffold(
@@ -102,39 +102,15 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                             subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
                             controller: controller,
                             controls: (state) {
-                              return VideoControlWidget(
-                                player: player,
-                                state: state,
-                              );
-                            },
-                          ),
-                          StreamBuilder(
-                            stream: player.stream.buffering,
-                            builder: (context, snapshot) {
-                              if (snapshot.data == true) {
-                                return GestureDetector(
-                                  onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        color: Colors.black26,
-                                      ),
-                                      Positioned(
-                                        top: videoPlayerHeight - 50,
-                                        left: videoPlayerWidth - 50,
-                                        child: const SizedBox(
-                                          height: 80,
-                                          width: 80,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                              return Stack(
+                                children: [
+                                  BufferingWidget(player: player),
+                                  VideoControlWidget(
+                                    player: player,
+                                    state: state,
                                   ),
-                                );
-                              }
-                              return Container();
+                                ],
+                              );
                             },
                           ),
                         ],
@@ -147,6 +123,44 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class BufferingWidget extends StatelessWidget {
+  const BufferingWidget({
+    super.key,
+    required this.player,
+  });
+
+  final Player player;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: player.stream.buffering,
+      builder: (context, snapshot) {
+        if (snapshot.data == true) {
+          return GestureDetector(
+            onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
+            child: Container(
+              height: MediaQuery.of(context).size.height,
+              width: MediaQuery.of(context).size.width,
+              color: Colors.black26,
+              child: Center(
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.1,
+                  width: MediaQuery.of(context).size.height * 0.1,
+                  child: const CircularProgressIndicator(
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        return Container();
+      },
     );
   }
 }
@@ -246,71 +260,75 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Scrollbar(
       controller: scrollController,
-      child: Column(
-        children: [
-          ...ref.read(playlistProvider).asMap().entries.map(
-            (e) {
-              Media media = ref.read(playlistProvider)[e.key];
-              bool playing = e.key == ref.read(playingVideoProvider);
-              return GestureDetector(
-                onDoubleTap: () async {
-                  await widget.player.jump(e.key).then((_) {
-                    ref.read(playingVideoProvider.notifier).update((state) => e.key);
-                    Navigator.of(context).pop();
-                  });
-                },
-                child: Listener(
-                  onPointerDown: (_) {
-                    setState(() {
-                      selectedIndex = e.key;
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: scrollController,
+        child: Column(
+          children: [
+            ...ref.read(playlistProvider).asMap().entries.map(
+              (e) {
+                Media media = ref.read(playlistProvider)[e.key];
+                bool playing = e.key == ref.read(playingVideoProvider);
+                return GestureDetector(
+                  onDoubleTap: () async {
+                    await widget.player.jump(e.key).then((_) {
+                      ref.read(playingVideoProvider.notifier).update((state) => e.key);
+                      Navigator.of(context).pop();
                     });
                   },
-                  child: Container(
-                    color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Icon(
-                            Icons.arrow_right,
-                            size: 26,
-                            color: playing
-                                ? selectedIndex == e.key
-                                    ? Colors.white
-                                    : Colors.black
-                                : Colors.transparent,
-                          ),
-                          Expanded(
-                            child: ExtendedText(
-                              Uri.decodeComponent(media.uri),
-                              maxLines: 1,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontSize: 13,
-                                    color: selectedIndex == e.key ? Colors.white : Colors.black,
-                                  ),
-                              overflowWidget: TextOverflowWidget(
-                                position: TextOverflowPosition.start,
-                                child: Text(
-                                  "...",
-                                  style: TextStyle(
-                                    color: selectedIndex == e.key ? Colors.white : Colors.black,
+                  child: Listener(
+                    onPointerDown: (_) {
+                      setState(() {
+                        selectedIndex = e.key;
+                      });
+                    },
+                    child: Container(
+                      color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Icon(
+                              Icons.arrow_right,
+                              size: 26,
+                              color: playing
+                                  ? selectedIndex == e.key
+                                      ? Colors.white
+                                      : Colors.black
+                                  : Colors.transparent,
+                            ),
+                            Expanded(
+                              child: ExtendedText(
+                                Uri.decodeComponent(media.uri),
+                                maxLines: 1,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontSize: 13,
+                                      color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                    ),
+                                overflowWidget: TextOverflowWidget(
+                                  position: TextOverflowPosition.start,
+                                  child: Text(
+                                    "...",
+                                    style: TextStyle(
+                                      color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ).pr(20),
-                          ),
-                        ],
+                              ).pr(20),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-        ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -481,7 +499,7 @@ class _SettingTabState extends ConsumerState<SettingTab> {
   }
 }
 
-class ProgressBar extends StatelessWidget {
+class ProgressBar extends StatefulWidget {
   const ProgressBar({
     super.key,
     required this.player,
@@ -490,31 +508,84 @@ class ProgressBar extends StatelessWidget {
   final Player player;
 
   @override
+  State<ProgressBar> createState() => _ProgressBarState();
+}
+
+class _ProgressBarState extends State<ProgressBar> {
+  late double position, timeStampsDouble;
+  late Offset cursorPosition;
+  Duration? timeStamps;
+  bool onHover = false;
+
+  @override
   Widget build(BuildContext context) {
-    return SliderTheme(
-      data: SliderThemeData(
-        trackHeight: 5,
-        activeTrackColor: Colors.black38,
-        inactiveTrackColor: Colors.grey[300],
-        thumbShape: const EmptySliderThumb(),
-        overlayColor: Colors.transparent,
-        overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-      ),
-      child: SizedBox(
-        height: 20,
-        child: Slider(
-          min: 0.0,
-          max: player.state.duration.inSeconds.toDouble(),
-          value: player.state.position.inSeconds.toDouble(),
-          onChangeEnd: (seekTo) async {
-            await player.seek(
-              Duration(
-                seconds: seekTo.toInt(),
-              ),
-            );
-          },
-          onChanged: (_) {},
-        ),
+    final playbackPosition = widget.player.state.position.inSeconds / widget.player.state.duration.inSeconds;
+
+    return SizedBox(
+      height: 34,
+      child: Stack(
+        children: [
+          Align(
+            // alignment: Alignment.bottomCenter,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return GestureDetector(
+                  onTap: () {
+                    if (timeStamps != null) {
+                      widget.player.seek(timeStamps!);
+                    }
+                  },
+                  child: MouseRegion(
+                    onHover: (event) {
+                      onHover = true;
+                      position = event.localPosition.dx / constraints.maxWidth;
+                      timeStampsDouble = position * widget.player.state.duration.inSeconds;
+                      timeStamps = Duration(seconds: timeStampsDouble.toInt());
+                      cursorPosition = event.localPosition;
+                      setState(() {});
+                    },
+                    onExit: (event) {
+                      onHover = false;
+                      setState(() {});
+                    },
+                    child: Stack(
+                      children: [
+                        LinearProgressIndicator(
+                          color: const Color.fromARGB(121, 2, 2, 2),
+                          backgroundColor: const Color.fromARGB(123, 129, 127, 127),
+                          value: widget.player.state.position.inSeconds != 0 ? playbackPosition : 0,
+                        ).py(5),
+                        Positioned(
+                          left: widget.player.state.position.inSeconds != 0 ? (playbackPosition * constraints.maxWidth) - 2 : 0,
+                          child: Container(
+                            height: 14,
+                            width: 3.8,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(
+                                width: 0.07,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ).px(60),
+          ),
+          if (onHover)
+            Positioned(
+              // left: cursorPosition.dx - 21,
+              left: cursorPosition.dx + 40,
+              top: -4,
+              child: Text(durationToStringWithoutMilliseconds(timeStamps ?? widget.player.state.position),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400, fontSize: 9))
+                  .pa(5),
+            ),
+        ],
       ),
     );
   }
@@ -527,6 +598,9 @@ String durationToStringWithoutMilliseconds(Duration duration) {
   String minutes = twoDigits(duration.inMinutes.remainder(60));
   String seconds = twoDigits(duration.inSeconds.remainder(60));
 
+  if (hours == '00') {
+    return '$minutes:$seconds';
+  }
   return '$hours:$minutes:$seconds';
 }
 
@@ -566,30 +640,59 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
   }
 }
 
-class EmptySliderThumb extends SliderComponentShape {
-  const EmptySliderThumb();
+class SlimSliderThumb extends SliderComponentShape {
+  final double width;
+  final double height;
+  final Color shadowColor;
+
+  const SlimSliderThumb({
+    this.width = 3.0,
+    this.height = 15.0,
+    this.shadowColor = Colors.black,
+  });
 
   @override
   Size getPreferredSize(bool isEnabled, bool isDiscrete) {
-    double thumbRadius = 0;
-    return Size.fromRadius(thumbRadius);
+    return Size(width, height);
   }
 
   @override
   void paint(
     PaintingContext context,
     Offset center, {
-    required Animation<double> activationAnimation,
-    required Animation<double> enableAnimation,
-    required bool isDiscrete,
-    required TextPainter labelPainter,
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required TextDirection textDirection,
-    required double value,
-    required double textScaleFactor,
-    required Size sizeWithOverflow,
-  }) {}
+    Animation<double>? activationAnimation,
+    Animation<double>? enableAnimation,
+    bool? isDiscrete,
+    TextPainter? labelPainter,
+    RenderBox? parentBox,
+    SliderThemeData? sliderTheme,
+    TextDirection? textDirection,
+    double? value,
+    double? textScaleFactor,
+    Size? sizeWithOverflow,
+  }) {
+    final Paint paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final Rect thumbRect = Rect.fromCenter(
+      center: center,
+      width: width,
+      height: height,
+    );
+
+    // Draw shadow
+    final Paint shadowPaint = Paint()
+      ..color = shadowColor.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.0);
+
+    final Rect shadowRect = thumbRect.shift(const Offset(0, 1));
+
+    context.canvas.drawRRect(RRect.fromRectAndRadius(shadowRect, const Radius.circular(2)), shadowPaint);
+
+    // Draw thumb
+    context.canvas.drawRect(thumbRect, paint);
+  }
 }
 
 (List<Media>, int) getPlaylist(WidgetRef ref, String url) {

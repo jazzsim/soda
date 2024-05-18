@@ -259,29 +259,27 @@ class _ControlsOverlay extends ConsumerWidget {
             color: const Color.fromARGB(240, 243, 243, 243),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 3, 10, 11),
+            padding: const EdgeInsets.fromLTRB(10, 3, 10, 0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
                   width: controlsOverlaySize,
-                  height: 40,
+                  height: 70,
                   child: Stack(
                     children: [
-                      Positioned.fill(
-                        child: Align(
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: IconButton(
+                          onPressed: () => player.state.playing ? player.pause() : player.play(),
                           alignment: Alignment.center,
-                          child: IconButton(
-                            onPressed: () => player.state.playing ? player.pause() : player.play(),
-                            alignment: Alignment.center,
-                            iconSize: 42,
-                            padding: EdgeInsets.zero,
-                            hoverColor: Colors.transparent,
-                            highlightColor: Colors.transparent,
-                            splashColor: Colors.transparent,
-                            icon: Icon(
-                              player.state.playing ? Icons.pause : Icons.play_arrow,
-                            ),
+                          iconSize: 42,
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: Icon(
+                            player.state.playing ? Icons.pause : Icons.play_arrow,
                           ),
                         ),
                       ),
@@ -311,6 +309,8 @@ class _ControlsOverlay extends ConsumerWidget {
                         top: 0,
                         right: 0,
                         child: IconButton(
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
                           onPressed: () async {
                             showDrawer(
                               context,
@@ -331,30 +331,32 @@ class _ControlsOverlay extends ConsumerWidget {
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 10, right: 10),
-                  child: Row(
-                    children: [
-                      Text(
-                        durationToStringWithoutMilliseconds(player.state.position),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w400,
-                            ),
-                      ),
-                      Expanded(
+                      Align(
+                        alignment: Alignment.bottomCenter,
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 15, right: 15, bottom: 0),
-                          child: ProgressBar(player: player),
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Text(
+                                durationToStringWithoutMilliseconds(player.state.position),
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                durationToStringWithoutMilliseconds(player.state.duration),
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      Text(
-                        durationToStringWithoutMilliseconds(player.state.duration),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w400,
-                            ),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: ProgressBar(player: player),
                       ),
                     ],
                   ),
