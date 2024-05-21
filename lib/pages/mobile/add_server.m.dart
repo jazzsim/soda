@@ -30,6 +30,7 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               TextField(
+                autofocus: true,
                 decoration: const InputDecoration(labelText: 'Server url', border: OutlineInputBorder()),
                 keyboardType: TextInputType.url,
                 onChanged: (url) => ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: url)),
@@ -86,13 +87,8 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                         ref.invalidate(serverListStateProvider);
 
                         Uri serverUri = Uri.parse(ref.read(httpServerStateProvider).url);
-                        try {
-                          ref.read(pathStateProvider.notifier).state = serverUri.path;
-                          ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
-                          ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
-                        } catch (e) {
-                          ref.read(titleStateProvider.notifier).state = '/';
-                        }
+                        ref.read(pathStateProvider.notifier).state = serverUri.path;
+                        ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
                       }).catchError((err, st) {
                         showToast(context, ToastType.error, err);
                       });
