@@ -43,8 +43,8 @@ class ContentController {
   final ProviderRef<Object?> ref;
   ContentController(this.ref);
 
-  Future<void> getPageContent({bool? browse}) async {
-    final String path = (browse ?? false) ? ref.read(browsePathStateProvider) : ref.read(pathStateProvider);
+  Future<void> getPageContent({bool browse = false}) async {
+    final String path = browse ? ref.read(browsePathStateProvider) : ref.read(pathStateProvider);
     // append path to selected server
     HttpServer targetServer = ref.read(httpServerStateProvider).copyWith(url: ref.read(httpServerStateProvider).url + path);
     final res = await ServerApi().getContent(targetServer);
@@ -98,8 +98,9 @@ class ContentController {
     return Uri.parse(ref.read(httpServerStateProvider).url);
   }
 
-  Uri handleReverse() {
-    Uri originalUri = Uri.parse(ref.watch(httpServerStateProvider).url + ref.watch(pathStateProvider));
+  Uri handleReverse({bool browse = false}) {
+    String path = browse ? ref.read(browsePathStateProvider) : ref.read(pathStateProvider);
+    Uri originalUri = Uri.parse(ref.watch(httpServerStateProvider).url + path);
     List<String> newPathSegments = List.from(originalUri.pathSegments);
 
     // remove empty path ("/")

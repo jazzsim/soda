@@ -555,7 +555,7 @@ class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
                                     loadingOverlayEntry = showLoadingOverlay(context);
                                     Overlay.of(context).insert(loadingOverlayEntry!);
                                     if (folder == '../') {
-                                      Uri uri = ref.read(contentControllerProvider).handleReverse();
+                                      Uri uri = ref.read(contentControllerProvider).handleReverse(browse: true);
                                       ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: uri.origin));
                                       ref.read(browsePathStateProvider.notifier).update((state) => "${uri.path}/");
                                     } else {
