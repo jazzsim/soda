@@ -19,42 +19,56 @@ class ListFolder extends ConsumerWidget {
         final folder = ref.watch(pageContentStateProvider).folders[index];
         String readableFolder = Uri.decodeComponent(folder);
 
-        return GestureDetector(
-            onTap: () {
-              LoadingScreen(context).show();
-              if (folder == '../') {
-                Uri uri = ref.read(contentControllerProvider).handleReverse();
-                ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: uri.origin));
-                ref.read(pathStateProvider.notifier).update((state) => "${uri.path}/");
-              } else {
-                ref.watch(pathStateProvider.notifier).update((state) => '$state$folder');
-              }
-              ref.read(titleStateProvider.notifier).update((state) => readableFolder);
-              ref.read(contentControllerProvider).getPageContent().then((value) {
-                LoadingScreen(context).hide();
-              }).catchError((err, st) {
-                showToast(context, ToastType.error, err);
-              });
-            },
-            child: Container(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.folder,
-                    color: Color.fromARGB(255, 117, 117, 117),
-                  ).pltrb(10, 0, 5, 0),
-                  Expanded(
-                    child: Text(
-                      readableFolder,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ).px(5),
-                  ),
-                ],
-              ).py(8),
-            ));
+        return FolderListTile(folder: folder, readableFolder: readableFolder);
       },
+    );
+  }
+}
+
+class FolderListTile extends ConsumerWidget {
+  const FolderListTile({
+    super.key,
+    required this.folder,
+    required this.readableFolder,
+  });
+
+  final String folder;
+  final String readableFolder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      onTap: () {
+        LoadingScreen(context).show();
+        if (folder == '../') {
+          Uri uri = ref.read(contentControllerProvider).handleReverse();
+          ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: uri.origin));
+          ref.read(pathStateProvider.notifier).update((state) => "${uri.path}/");
+        } else {
+          ref.watch(pathStateProvider.notifier).update((state) => '$state$folder');
+        }
+        ref.read(contentControllerProvider).getPageContent().then((value) {
+          LoadingScreen(context).hide();
+        }).catchError((err, st) {
+          showToast(context, ToastType.error, err);
+        });
+      },
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.folder,
+            color: Color.fromARGB(255, 117, 117, 117),
+          ).pltrb(10, 0, 5, 0),
+          Expanded(
+            child: Text(
+              readableFolder,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ).px(5),
+          ),
+        ],
+      ).py(8),
     );
   }
 }

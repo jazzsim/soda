@@ -22,54 +22,43 @@ class HomePageMobile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('Soda'),
-        bottom: PreferredSize(
-          preferredSize: const Size(40, 20),
-          child: Text(
-            ref.watch(titleStateProvider),
-          ),
-        ),
-      ),
-      drawer: NavigationDrawer(
-          selectedIndex: ref.watch(selectedIndexStateProvvider),
-          children: [
-            Consumer(builder: (context, ref, child) {
-              return ListTile(
-                title: const Text(
-                  'New Server',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+      drawer: NavigationDrawer(selectedIndex: ref.watch(selectedIndexStateProvvider), children: [
+        Consumer(builder: (context, ref, child) {
+          return ListTile(
+            title: const Text(
+              'New Server',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            trailing: const Icon(Icons.add_circle_rounded),
+            onTap: () => addServer(ref, context, MediaQuery.of(context).size.width),
+          );
+        }),
+        const Divider(),
+        if (ref.watch(serverListStateProvider).isNotEmpty) ...[
+          ...ref
+              .watch(serverListStateProvider)
+              .asMap()
+              .entries
+              .map(
+                (MapEntry<int, String> server) => ListTile(
+                  leading: const Icon(Icons.dns),
+                  onTap: () => selectServerFunc(ref, context, server.key),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(120)),
+                  onLongPress: () => deleteServerDialog(ref, context, server.key),
+                  selected: ref.watch(selectedIndexStateProvvider) == server.key,
+                  selectedTileColor: const Color(0xFFD8E2F7),
+                  title: Text(
+                    server.value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                trailing: const Icon(Icons.add_circle_rounded),
-                onTap: () => addServer(ref, context, MediaQuery.of(context).size.width),
-              );
-            }),
-            const Divider(),
-            if (ref.watch(serverListStateProvider).isNotEmpty) ...[
-              ...ref
-                  .watch(serverListStateProvider)
-                  .asMap()
-                  .entries
-                  .map(
-                    (MapEntry<int, String> server) => ListTile(
-                      leading: const Icon(Icons.dns),
-                      onTap: () => selectServerFunc(ref, context, server.key),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(120)),
-                      onLongPress: () => deleteServerDialog(ref, context, server.key),
-                      selected: ref.watch(selectedIndexStateProvvider) == server.key,
-                      selectedTileColor: const Color(0xFFD8E2F7),
-                      title: Text(
-                        server.value,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ).px(5),
-                  )
-                  .toList(),
-            ]
-          ]),
+                ).px(5),
+              )
+              .toList(),
+        ]
+      ]),
       body: ref.watch(pageContentStateProvider).files.isEmpty && ref.watch(pageContentStateProvider).folders.isEmpty
           ? Center(
               child: const Text(

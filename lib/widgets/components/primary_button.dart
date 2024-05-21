@@ -22,28 +22,30 @@ class WebPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      style: FilledButton.styleFrom(
+    return SizedBox(
+      height: 40,
+      width: 120,
+      child: FilledButton(
+        style: FilledButton.styleFrom(
           minimumSize: const Size(180, 55),
           maximumSize: const Size(180, 55),
-          textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(
-              6,
+              4,
             ),
-          )),
-      onPressed: onPressed,
-      child: icon != null
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                icon!,
-                Text(text),
-              ],
-            )
-          : Text(text),
+          ),
+        ),
+        onPressed: onPressed,
+        child: icon != null
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  icon!,
+                  Text(text),
+                ],
+              )
+            : Text(text),
+      ),
     );
   }
 }

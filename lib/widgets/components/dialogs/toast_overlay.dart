@@ -6,10 +6,10 @@ import 'loading_dialog.dart';
 enum ToastType { success, error }
 
 void showToast(BuildContext context, ToastType type, String message, {bool? extent}) {
-  // close loading dialog if exist
-  if (ModalRoute.of(context)?.isCurrent != true) {
-    LoadingScreen(context).hide();
-  }
+  // // close loading dialog if exist
+  // if (ModalRoute.of(context)?.isCurrent != true) {
+  //   LoadingScreen(context).hide();
+  // }
 
   OverlayEntry overlayEntry;
 
@@ -38,8 +38,8 @@ void showToast(BuildContext context, ToastType type, String message, {bool? exte
             borderRadius: BorderRadius.circular(15.0),
             child: Container(
               constraints: const BoxConstraints(
-                minWidth: 180,
-                minHeight: 90,
+                minWidth: 200,
+                minHeight: 100,
               ),
               decoration: const BoxDecoration(
                 color: Color.fromARGB(150, 0, 0, 0),

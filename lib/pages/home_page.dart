@@ -55,9 +55,6 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     ref.invalidate(pageContentStateProvider);
     ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: serverUri.origin));
     ref.read(pathStateProvider.notifier).state = serverUri.path;
-    if (serverUri.pathSegments.isNotEmpty) {
-      ref.read(titleStateProvider.notifier).state = serverUri.pathSegments.last;
-    }
 
     ref.read(contentControllerProvider).getPageContent().then((_) {
       // showToast(context, ToastType.success, 'Connected');
@@ -76,8 +73,6 @@ Future<void> updateFolderPref() async {
 }
 
 void selectFolderFunc(WidgetRef ref, BuildContext context, String folder) {
-  String readableFolder = Uri.decodeComponent(folder);
-
   LoadingScreen(context).show();
   if (folder == '../') {
     Uri uri = ref.read(contentControllerProvider).handleReverse();
@@ -86,7 +81,6 @@ void selectFolderFunc(WidgetRef ref, BuildContext context, String folder) {
   } else {
     ref.watch(pathStateProvider.notifier).update((state) => '$state$folder');
   }
-  ref.read(titleStateProvider.notifier).update((state) => readableFolder);
   ref.read(contentControllerProvider).getPageContent().then((value) {
     LoadingScreen(context).hide();
   }).catchError((err, st) {

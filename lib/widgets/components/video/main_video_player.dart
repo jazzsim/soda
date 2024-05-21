@@ -10,6 +10,9 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/pages/home_page.dart';
+import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
+import 'package:soda/widgets/components/primary_button.dart';
+import 'package:soda/widgets/components/secondary_button.dart';
 import 'package:soda/widgets/components/video/video_control.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:soda/widgets/extensions/row.dart';
@@ -19,6 +22,8 @@ final offSetStateProvider = StateProvider<double>((ref) => 0);
 final playlistProvider = StateProvider<List<Media>>((ref) => []);
 
 final playingVideoProvider = StateProvider<int>((ref) => 0);
+
+final browsePathStateProvider = StateProvider.autoDispose<String>((ref) => ref.read(pathStateProvider));
 
 class MainVideoPlayer extends ConsumerStatefulWidget {
   final String url;
@@ -70,7 +75,6 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: EndDrawerWidget(player: player),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -351,7 +355,7 @@ class _SettingTabState extends ConsumerState<SettingTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 150,
+          height: 250,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -362,65 +366,69 @@ class _SettingTabState extends ConsumerState<SettingTab> {
               Flexible(
                 child: StreamBuilder<Tracks>(
                   stream: widget.player.stream.tracks,
-                  builder: (context, snapshot) => Column(
-                    children: [
-                      ...(snapshot.data?.subtitle ?? subtitles).asMap().entries.map((e) {
-                        late SubtitleTrack subtitleTrack;
-                        late bool loaded;
-                        if (snapshot.data?.subtitle == null) {
-                          subtitleTrack = subtitles[e.key];
-                          if (widget.player.state.track.subtitle.title == null) {
-                            loaded = e.value.id == widget.player.state.track.subtitle.id;
-                          } else {
-                            loaded = e.value.title == widget.player.state.track.subtitle.title;
-                          }
-                        } else {
-                          subtitleTrack = widget.player.state.tracks.subtitle[e.key];
-                          loaded = e.value.title == widget.player.state.track.subtitle.title;
-                        }
+                  builder: (context, snapshot) => SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ...(snapshot.data?.subtitle ?? subtitles).asMap().entries.map(
+                          (e) {
+                            late SubtitleTrack subtitleTrack;
+                            late bool loaded;
+                            if (snapshot.data?.subtitle == null) {
+                              subtitleTrack = subtitles[e.key];
+                              if (widget.player.state.track.subtitle.title == null) {
+                                loaded = e.value.id == widget.player.state.track.subtitle.id;
+                              } else {
+                                loaded = e.value.title == widget.player.state.track.subtitle.title;
+                              }
+                            } else {
+                              subtitleTrack = widget.player.state.tracks.subtitle[e.key];
+                              loaded = e.value.title == widget.player.state.track.subtitle.title;
+                            }
 
-                        return GestureDetector(
-                          onDoubleTap: () async {
-                            await widget.player.setSubtitleTrack(e.value);
-                            setState(() {});
-                          },
-                          child: Listener(
-                            onPointerDown: (_) => setState(() {
-                              selectedIndex = e.key;
-                            }),
-                            child: Container(
-                              color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 0.5),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Icon(
-                                      Icons.arrow_right,
-                                      size: 26,
-                                      color: loaded
-                                          ? selectedIndex == e.key
-                                              ? Colors.white
-                                              : Colors.black
-                                          : Colors.transparent,
+                            return GestureDetector(
+                              onDoubleTap: () async {
+                                await widget.player.setSubtitleTrack(e.value);
+                                setState(() {});
+                              },
+                              child: Listener(
+                                onPointerDown: (_) => setState(() {
+                                  selectedIndex = e.key;
+                                }),
+                                child: Container(
+                                  color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 0.5),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_right,
+                                          size: 26,
+                                          color: loaded
+                                              ? selectedIndex == e.key
+                                                  ? Colors.white
+                                                  : Colors.black
+                                              : Colors.transparent,
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            subtitleTrack.title ?? subtitleTrack.id,
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  fontSize: 13,
+                                                  color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                                ),
+                                          ).pr(15).py(3),
+                                        ),
+                                      ],
                                     ),
-                                    Expanded(
-                                      child: Text(
-                                        subtitleTrack.title ?? subtitleTrack.id,
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              fontSize: 13,
-                                              color: selectedIndex == e.key ? Colors.white : Colors.black,
-                                            ),
-                                      ).pr(20),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -433,13 +441,13 @@ class _SettingTabState extends ConsumerState<SettingTab> {
         ).pltrb(15, 15, 0, 10),
         TextButton(
           style: TextButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 190, 190, 190),
+            backgroundColor: const Color.fromARGB(255, 217, 217, 217),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
             ),
           ),
-          onPressed: () {},
+          onPressed: () => showOverlay(context, widget.player),
           child: Text(
             "Browse from this server",
             style: Theme.of(context).textTheme.bodyMedium,
@@ -450,7 +458,7 @@ class _SettingTabState extends ConsumerState<SettingTab> {
         ),
         TextButton(
           style: TextButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 190, 190, 190),
+            backgroundColor: const Color.fromARGB(255, 217, 217, 217),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
@@ -484,6 +492,219 @@ class _SettingTabState extends ConsumerState<SettingTab> {
   }
 }
 
+void showOverlay(BuildContext context, Player player) async {
+  OverlayEntry? overlayEntry;
+
+  final backdrop = Container(
+    color: Colors.black.withOpacity(0.5),
+  );
+
+  overlayEntry = OverlayEntry(
+    builder: (context) => BrowseFileOverlay(overlayEntry: overlayEntry, backdrop: backdrop, player: player),
+  );
+
+  Overlay.of(context).insert(overlayEntry);
+}
+
+class BrowseFileOverlay extends ConsumerStatefulWidget {
+  final OverlayEntry? overlayEntry;
+  final Widget backdrop;
+  final Player player;
+  const BrowseFileOverlay({required this.overlayEntry, required this.backdrop, required this.player, super.key});
+
+  @override
+  ConsumerState<BrowseFileOverlay> createState() => _BrowseFileOverlayState();
+}
+
+class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
+  int selectedIndex = -1;
+  OverlayEntry? loadingOverlayEntry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.backdrop,
+        Align(
+          alignment: Alignment.center,
+          child: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: Card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Browse subtitle from server',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ).pa(20),
+                    Text(
+                      "Path: ${Uri.decodeComponent(ref.watch(browsePathStateProvider))}",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                    ).px(20),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            ...ref.watch(pageContentStateProvider).folders.map(
+                              (folder) {
+                                return ListTile(
+                                  onTap: () {
+                                    loadingOverlayEntry = showLoadingOverlay(context);
+                                    Overlay.of(context).insert(loadingOverlayEntry!);
+                                    if (folder == '../') {
+                                      Uri uri = ref.read(contentControllerProvider).handleReverse();
+                                      ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: uri.origin));
+                                      ref.read(browsePathStateProvider.notifier).update((state) => "${uri.path}/");
+                                    } else {
+                                      ref.watch(browsePathStateProvider.notifier).update((state) => '$state$folder');
+                                    }
+                                    ref.read(contentControllerProvider).getPageContent(browse: true).then((value) {
+                                      loadingOverlayEntry?.remove();
+                                    }).catchError((err, st) {
+                                      showToast(context, ToastType.error, err);
+                                    });
+                                  },
+                                  title: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.folder,
+                                        color: Color.fromARGB(255, 117, 117, 117),
+                                      ).pltrb(10, 0, 5, 0),
+                                      Expanded(
+                                        child: Text(
+                                          Uri.decodeComponent(folder),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ).px(5),
+                                      ),
+                                    ],
+                                  ).py(8),
+                                );
+                              },
+                            ),
+                            ...ref.watch(othersContentStateProvider).asMap().entries.map(
+                              (file) {
+                                return ListTile(
+                                  onTap: () async => setState(() {
+                                    selectedIndex = file.key;
+                                  }),
+                                  splashColor: Colors.transparent,
+                                  selectedTileColor: const Color.fromARGB(255, 58, 124, 238),
+                                  selectedColor: Colors.white,
+                                  leading: Icon(
+                                    Icons.description,
+                                    color: selectedIndex == file.key ? Colors.white : const Color.fromARGB(255, 117, 117, 117),
+                                  ).pltrb(10, 0, 5, 0),
+                                  selected: selectedIndex == file.key,
+                                  title: Text(Uri.decodeComponent(file.value.filename)),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ).pt(20),
+                    ),
+                    Card(
+                      margin: EdgeInsets.zero,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(15),
+                          bottomRight: Radius.circular(15),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          WebPrimaryButton(
+                            "Load",
+                            onPressed: selectedIndex == -1
+                                ? null
+                                : () async {
+                                    List<String> subsExt = ['srt', 'ass', 'sub', 'vtt', 'ssa'];
+                                    final url = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
+                                    final file = ref.read(othersContentStateProvider)[selectedIndex];
+                                    for (var ext in subsExt) {
+                                      if (file.filename.contains(ext)) {
+                                        loadingOverlayEntry = showLoadingOverlay(context);
+                                        Overlay.of(context).insert(loadingOverlayEntry!);
+                                        await Future.delayed(const Duration(milliseconds: 500));
+                                        await widget.player.setSubtitleTrack(
+                                          SubtitleTrack.uri(
+                                            url + file.filename,
+                                            title: Uri.decodeComponent(file.filename),
+                                          ),
+                                        );
+                                        loadingOverlayEntry?.remove();
+                                        widget.overlayEntry?.remove();
+                                        return;
+                                      }
+                                    }
+                                    showToast(context, ToastType.error, 'File not supported', extent: true);
+                                  },
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          WebSecondaryButton(
+                            "Cancel",
+                            onPressed: () => widget.overlayEntry?.remove(),
+                          )
+                        ],
+                      ).pa(15),
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+OverlayEntry showLoadingOverlay(BuildContext context) {
+  return OverlayEntry(
+    builder: (context) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8 - 4,
+          height: MediaQuery.of(context).size.height * 0.8 - 4,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15.0),
+            color: Colors.black.withOpacity(0.5),
+          ),
+          child: Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15.0),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 90.0, minWidth: 200.0),
+                color: const Color.fromARGB(150, 0, 0, 0),
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Please hold...',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontSize: 15.0),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class ProgressBar extends StatefulWidget {
   const ProgressBar({
     super.key,
@@ -511,7 +732,6 @@ class _ProgressBarState extends State<ProgressBar> {
       child: Stack(
         children: [
           Align(
-            // alignment: Alignment.bottomCenter,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return GestureDetector(
@@ -539,6 +759,7 @@ class _ProgressBarState extends State<ProgressBar> {
                           color: const Color.fromARGB(121, 2, 2, 2),
                           backgroundColor: const Color.fromARGB(123, 129, 127, 127),
                           value: widget.player.state.position.inSeconds != 0 ? playbackPosition : 0,
+                          borderRadius: BorderRadius.circular(12),
                         ).py(5),
                         Positioned(
                           left: widget.player.state.position.inSeconds != 0 ? (playbackPosition * constraints.maxWidth) - 2 : 0,
@@ -559,7 +780,7 @@ class _ProgressBarState extends State<ProgressBar> {
                   ),
                 );
               },
-            ).px(60),
+            ).pltrb(60, 4, 60, 0),
           ),
           if (onHover)
             Positioned(
@@ -618,65 +839,10 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
             setState(() {});
           }),
           activeColor: const Color.fromARGB(255, 96, 154, 254),
-          inactiveColor: const Color.fromARGB(228, 222, 222, 222),
+          inactiveColor: const Color.fromARGB(248, 212, 211, 211),
         ),
       ),
     );
-  }
-}
-
-class SlimSliderThumb extends SliderComponentShape {
-  final double width;
-  final double height;
-  final Color shadowColor;
-
-  const SlimSliderThumb({
-    this.width = 3.0,
-    this.height = 15.0,
-    this.shadowColor = Colors.black,
-  });
-
-  @override
-  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
-    return Size(width, height);
-  }
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset center, {
-    Animation<double>? activationAnimation,
-    Animation<double>? enableAnimation,
-    bool? isDiscrete,
-    TextPainter? labelPainter,
-    RenderBox? parentBox,
-    SliderThemeData? sliderTheme,
-    TextDirection? textDirection,
-    double? value,
-    double? textScaleFactor,
-    Size? sizeWithOverflow,
-  }) {
-    final Paint paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final Rect thumbRect = Rect.fromCenter(
-      center: center,
-      width: width,
-      height: height,
-    );
-
-    // Draw shadow
-    final Paint shadowPaint = Paint()
-      ..color = shadowColor.withOpacity(0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.0);
-
-    final Rect shadowRect = thumbRect.shift(const Offset(0, 1));
-
-    context.canvas.drawRRect(RRect.fromRectAndRadius(shadowRect, const Radius.circular(2)), shadowPaint);
-
-    // Draw thumb
-    context.canvas.drawRect(thumbRect, paint);
   }
 }
 

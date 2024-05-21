@@ -5,14 +5,13 @@ import 'package:soda/api/server_api.dart';
 import 'package:soda/modals/http_server.dart';
 import 'package:soda/pages/home_page.dart';
 import 'package:soda/providers/preferences_service.dart';
+import 'package:soda/widgets/components/video/main_video_player.dart';
 
 import '../modals/page_content.dart';
 
 final httpServerStateProvider = StateProvider<HttpServer>((ref) => HttpServer(url: '', username: '', password: ''));
 
 final pathStateProvider = StateProvider<String>((ref) => '');
-
-final titleStateProvider = StateProvider<String>((ref) => '');
 
 final contentControllerProvider = Provider((ref) => ContentController(ref));
 
@@ -44,9 +43,10 @@ class ContentController {
   final ProviderRef<Object?> ref;
   ContentController(this.ref);
 
-  Future<void> getPageContent() async {
+  Future<void> getPageContent({bool? browse}) async {
+    final String path = (browse ?? false) ? ref.read(browsePathStateProvider) : ref.read(pathStateProvider);
     // append path to selected server
-    HttpServer targetServer = ref.watch(httpServerStateProvider).copyWith(url: ref.watch(httpServerStateProvider).url + ref.watch(pathStateProvider));
+    HttpServer targetServer = ref.read(httpServerStateProvider).copyWith(url: ref.read(httpServerStateProvider).url + path);
     final res = await ServerApi().getContent(targetServer);
 
     ref.read(pageContentStateProvider.notifier).update((state) => state.copyWith(folders: res.folders, files: res.files));
@@ -57,7 +57,7 @@ class ContentController {
     List<String> mediaTypes = ['image', 'video', 'document', 'others'];
 
     for (var type in mediaTypes) {
-      final contents = ref.watch(pageContentStateProvider).files.where((file) => file.media.toLowerCase() == type).toList();
+      final contents = ref.read(pageContentStateProvider).files.where((file) => file.media.toLowerCase() == type).toList();
       switch (type) {
         case "image":
           ref.read(imagesContentStateProvider.notifier).update((state) => contents);
