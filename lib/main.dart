@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -53,6 +54,7 @@ final GoRouter _router = GoRouter(
 );
 
 class MyApp extends StatelessWidget {
+  static const platform = MethodChannel('jazzsim.soda/cursor');
   const MyApp({super.key});
 
   @override

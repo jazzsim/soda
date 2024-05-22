@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:soda/main.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
 import 'package:soda/pages/home_page.dart';
 import 'package:soda/widgets/components/video/main_video_player.dart';
@@ -37,6 +38,22 @@ class VideoControlWidget extends ConsumerStatefulWidget {
 }
 
 class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
+  bool? cursorInWindow = false;
+
+  Future<void> _getCursor({bool callTimer = true}) async {
+    try {
+      final result = await MyApp.platform.invokeMethod<bool>('cursorInsideWindow');
+      cursorInWindow = result;
+      if (cursorInWindow ?? false) {
+        showControls(ref, callTimer);
+      }
+    } on PlatformException {
+      cursorInWindow = null;
+    }
+
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
@@ -61,22 +78,9 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
             children: [
               MouseRegion(
                 cursor: ref.watch(showVideoControlProvider) ? MouseCursor.defer : SystemMouseCursors.none,
-                onEnter: (event) => setState(
-                  () {
-                    ref.read(timerProvider)?.cancel();
-                    ref.read(showVideoControlProvider.notifier).update((state) => true);
-                  },
-                ),
-                onExit: (event) => setState(
-                  () {
-                    ref.read(timerProvider)?.cancel();
-                    ref.read(showVideoControlProvider.notifier).update((state) => true);
-                  },
-                ),
+                onExit: (event) => _getCursor(callTimer: false),
                 child: Listener(
-                  onPointerDown: (event) {
-                    windowManager.startDragging();
-                  },
+                  onPointerDown: (event) => windowManager.startDragging(),
                   onPointerSignal: (pointerSignal) async {
                     if (pointerSignal is PointerScrollEvent) {
                       double currentVolume = ref.read(volumeStateProvider);
@@ -98,24 +102,9 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
 
                     ref.read(showVolumeProvider.notifier).update((state) => true);
                   },
-                  onPointerHover: (event) {
-                    ref.read(showVideoControlProvider.notifier).update((state) => true);
-                    setState(() {});
-                    ref.read(timerProvider)?.cancel();
-                    ref.read(timerProvider.notifier).update(
-                          (state) => Timer(
-                            ref.read(durationProvider),
-                            () {
-                              ref.read(showVideoControlProvider.notifier).update((state) => false);
-                              setState(() {});
-                            },
-                          ),
-                        );
-                  },
+                  onPointerHover: (event) => _getCursor(),
                   child: GestureDetector(
-                    onDoubleTap: () {
-                      widget.state.toggleFullscreen();
-                    },
+                    onDoubleTap: () => widget.state.toggleFullscreen(),
                     onSecondaryTapDown: (event) => widget.player.state.playing ? widget.player.pause() : widget.player.play(),
                     child: Container(
                       color: Colors.transparent,
@@ -459,7 +448,7 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
   };
 }
 
-void showVideo(WidgetRef ref, {bool callTimer = true}) {
+void showControls(WidgetRef ref, bool callTimer) {
   ref.read(showVideoControlProvider.notifier).update((state) => true);
   ref.watch(timerProvider)?.cancel();
 
