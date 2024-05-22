@@ -25,6 +25,10 @@ final playingVideoProvider = StateProvider<int>((ref) => 0);
 
 final browsePathStateProvider = StateProvider.autoDispose<String>((ref) => ref.read(pathStateProvider));
 
+final subtitlePositionStateProvider = StateProvider.autoDispose<double>((ref) => 0);
+
+final subtitleScaleStateProvider = StateProvider.autoDispose<double>((ref) => 0.34);
+
 class MainVideoPlayer extends ConsumerStatefulWidget {
   final String url;
   const MainVideoPlayer(this.url, {super.key});
@@ -487,6 +491,26 @@ class _SettingTabState extends ConsumerState<SettingTab> {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ).btnRow(15),
+        Text(
+          "Scale:",
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ).pltrb(15, 20, 0, 0),
+        Slider(
+          value: ref.watch(subtitleScaleStateProvider),
+          onChanged: (value) {
+            ref.read(subtitleScaleStateProvider.notifier).update((state) => value);
+          },
+        ),
+        Text(
+          "Position:",
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ).pltrb(15, 20, 0, 0),
+        Slider(
+          value: ref.watch(subtitlePositionStateProvider),
+          onChanged: (value) {
+            ref.read(subtitlePositionStateProvider.notifier).update((state) => value);
+          },
+        ),
       ],
     );
   }

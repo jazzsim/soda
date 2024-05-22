@@ -201,19 +201,15 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
                 ),
               ),
               Positioned(
-                bottom: 20,
+                bottom: (MediaQuery.sizeOf(context).height - 100) * (ref.watch(subtitlePositionStateProvider) ?? 0),
+                left: 0,
+                right: 0,
                 child: StreamBuilder<List<String>>(
                     stream: widget.player.stream.subtitle,
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
-                        for (var element in snapshot.data ?? []) {
-                          return Text(
-                            element,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.yellow,
-                                  fontSize: 34,
-                                ),
-                          );
+                        for (String element in snapshot.data ?? []) {
+                          return SubtitleWidget(subtitle: element).py(40);
                         }
                       }
                       return Container();
@@ -237,6 +233,41 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class SubtitleWidget extends ConsumerWidget {
+  final String subtitle;
+
+  const SubtitleWidget({
+    super.key,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: ref.watch(subtitleScaleStateProvider) * 100,
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 8
+              ..color = Colors.black,
+          ),
+        ),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: ref.watch(subtitleScaleStateProvider) * 100,
+            color: Colors.yellow,
+          ),
+        ),
+      ],
     );
   }
 }
