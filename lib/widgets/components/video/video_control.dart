@@ -37,8 +37,6 @@ class VideoControlWidget extends ConsumerStatefulWidget {
 }
 
 class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
-  final Duration _volumeDuration = const Duration(milliseconds: 1200); // Set the duration for pointer
-
   @override
   void initState() {
     super.initState();
@@ -46,11 +44,6 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(timerProvider.notifier).state = Timer.periodic(ref.read(durationProvider), (Timer timer) {});
     });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -84,31 +77,31 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
                   onPointerDown: (event) {
                     windowManager.startDragging();
                   },
-                  onPointerSignal: (pointerSignal) {
+                  onPointerSignal: (pointerSignal) async {
                     if (pointerSignal is PointerScrollEvent) {
-                      // do something when scrolled
-                      double currentVolume = widget.player.state.volume;
+                      double currentVolume = ref.read(volumeStateProvider);
                       if (pointerSignal.scrollDelta.dy < 0) {
                         if (currentVolume + 2.0 > 100) {
-                          widget.player.setVolume(100);
+                          ref.read(volumeStateProvider.notifier).update((state) => 100);
                         } else {
-                          widget.player.setVolume(currentVolume + 2.0);
+                          ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 2.0);
                         }
                       } else {
                         if (currentVolume - 2.0 < 0) {
-                          widget.player.setVolume(0);
+                          ref.read(volumeStateProvider.notifier).update((state) => 0);
                         } else {
-                          widget.player.setVolume(currentVolume - 2.0);
+                          ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 2.0);
                         }
                       }
-                      ref.read(volumeStateProvider.notifier).update((state) => widget.player.state.volume);
-                      ref.read(showVolumeProvider.notifier).update((state) => true);
+                      await widget.player.setVolume(ref.read(volumeStateProvider));
                     }
+
+                    ref.read(showVolumeProvider.notifier).update((state) => true);
                   },
                   onPointerHover: (event) {
                     ref.read(showVideoControlProvider.notifier).update((state) => true);
                     setState(() {});
-                    ref.watch(timerProvider)?.cancel();
+                    ref.read(timerProvider)?.cancel();
                     ref.read(timerProvider.notifier).update(
                           (state) => Timer(
                             ref.read(durationProvider),
@@ -135,44 +128,8 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
               Positioned(
                 top: 85,
                 left: 30,
-                child: AnimatedOpacity(
-                  onEnd: () {
-                    ref.read(videoTimerProvider)?.cancel();
-                    ref.read(videoTimerProvider.notifier).state = Timer(_volumeDuration, () {
-                      ref.read(showVolumeProvider.notifier).update((state) => false);
-                      setState(() {});
-                    });
-                  },
-                  opacity: ref.watch(showVolumeProvider) ? 1 : 0,
-                  curve: Curves.decelerate,
-                  duration: const Duration(
-                    milliseconds: 180,
-                  ),
-                  child: Container(
-                    width: 140,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(
-                        12,
-                      ),
-                      color: const Color.fromARGB(237, 238, 238, 238),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Volume: ${ref.watch(volumeStateProvider).floorToDouble().round()}",
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
-                        ),
-                        SizedBox(
-                          width: 115,
-                          child: LinearProgressIndicator(
-                            value: widget.player.state.volume / 100,
-                            color: Colors.blue,
-                          ).pt(5),
-                        ),
-                      ],
-                    ).pltrb(12, 8, 12, 12),
-                  ),
+                child: VolumeOverlay(
+                  player: widget.player,
                 ),
               ),
               Positioned(
@@ -232,6 +189,61 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class VolumeOverlay extends ConsumerStatefulWidget {
+  final Player player;
+  const VolumeOverlay({required this.player, super.key});
+
+  @override
+  ConsumerState<VolumeOverlay> createState() => _VolumeOverlayState();
+}
+
+class _VolumeOverlayState extends ConsumerState<VolumeOverlay> {
+  final Duration _volumeDuration = const Duration(milliseconds: 1200);
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(volumeStateProvider, (previous, next) {
+      ref.read(videoTimerProvider)?.cancel();
+      ref.read(videoTimerProvider.notifier).state = Timer(_volumeDuration, () {
+        ref.read(showVolumeProvider.notifier).update((state) => false);
+        setState(() {});
+      });
+    });
+    return AnimatedOpacity(
+      opacity: ref.watch(showVolumeProvider) ? 1 : 0,
+      curve: Curves.decelerate,
+      duration: const Duration(
+        milliseconds: 180,
+      ),
+      child: Container(
+        width: 140,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(
+            12,
+          ),
+          color: const Color.fromARGB(237, 238, 238, 238),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Volume: ${ref.watch(volumeStateProvider).floorToDouble().round()}",
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            SizedBox(
+              width: 115,
+              child: LinearProgressIndicator(
+                value: widget.player.state.volume / 100,
+                color: Colors.blue,
+              ).pt(5),
+            ),
+          ],
+        ).pltrb(12, 8, 12, 12),
       ),
     );
   }
@@ -420,22 +432,22 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
     },
     const SingleActivator(LogicalKeyboardKey.arrowUp): () async {
       double currentVolume = player.state.volume;
-      if (currentVolume + 2.0 > 100) {
+      if (currentVolume + 5.0 > 100) {
         await player.setVolume(100);
       } else {
-        await player.setVolume(currentVolume + 2.0).then((value) {});
+        await player.setVolume(currentVolume + 5.0).then((value) {});
       }
-      ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 2.0);
+      ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 5.0);
       ref.read(showVolumeProvider.notifier).update((state) => true);
     },
     const SingleActivator(LogicalKeyboardKey.arrowDown): () async {
       double currentVolume = player.state.volume;
-      if (currentVolume - 2.0 < 0) {
+      if (currentVolume - 5.0 < 0) {
         await player.setVolume(0);
       } else {
-        await player.setVolume(currentVolume - 2.0);
+        await player.setVolume(currentVolume - 5.0);
       }
-      ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 2.0);
+      ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 5.0);
       ref.read(showVolumeProvider.notifier).update((state) => true);
     },
     const SingleActivator(LogicalKeyboardKey.keyF): () async {
