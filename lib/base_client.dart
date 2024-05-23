@@ -6,14 +6,15 @@ const String baseUrl = 'http://localhost:8080/';
 class BaseClient {
   var client = http.Client();
 
-  Future<dynamic> get(String api) async {
-    var url = Uri.parse(baseUrl + api);
+  Future<dynamic> get(String api, {Map<String, String> query = const {}}) async {
+    // Append query parameters to the base URL
+    var url = Uri.parse(baseUrl + api).replace(queryParameters: query);
     var headers = {
       'Authorization': '',
     };
     http.Response response = await client.get(url, headers: headers);
     if (response.statusCode == 200) {
-      return response.body;
+      return jsonDecode(response.body);
     } else {
       // logger
       throw CustomError('Unexpected Error');

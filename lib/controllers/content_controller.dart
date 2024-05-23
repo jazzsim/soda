@@ -1,13 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/api/server_api.dart';
 import 'package:soda/modals/http_server.dart';
 import 'package:soda/pages/home_page.dart';
 import 'package:soda/providers/preferences_service.dart';
 import 'package:soda/widgets/components/video/main_video_player.dart';
+import 'package:soda/widgets/components/video/video_control.dart';
 
 import '../modals/page_content.dart';
+
+final thumbnailFutureProvider = FutureProvider.family<Image?, String>((ref, url) async {
+  return ref.read(contentControllerProvider).vidThumbnail(url);
+});
 
 final httpServerStateProvider = StateProvider<HttpServer>((ref) => HttpServer(url: '', username: '', password: ''));
 
@@ -145,5 +153,33 @@ class ContentController {
       ref.invalidate(selectedIndexStateProvvider);
       ref.invalidate(pageContentStateProvider);
     }
+  }
+
+  // video
+  Future<Image?> vidThumbnail(String url) async {
+    url = getUrl(url);
+    try {
+      final res = await ServerApi().getThumbnail(url);
+      final bytes = base64Decode(res.thumbnail);
+      return Image.memory(
+        bytes,
+        scale: 0.2,
+        fit: BoxFit.cover,
+      );
+    } catch (e) {
+      log("error $e");
+      return null;
+    }
+  }
+
+  String getUrl(String url) {
+    final username = ref.watch(httpServerStateProvider).username;
+    final password = ref.watch(httpServerStateProvider).password;
+    if (username != '' && password != '') {
+      var uri = Uri.parse(url);
+      url = uri.replace(userInfo: '$username:$password').toString();
+    }
+
+    return url;
   }
 }

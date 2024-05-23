@@ -306,7 +306,7 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
           case 'image':
             return ImageThumbnail(file, url: url);
           case 'video':
-            return VideoThumbnail(file, url: url);
+            return VideoThumbnail(file);
           case 'document':
             return DocumentThumbnailDekstop(file);
           default:

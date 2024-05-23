@@ -1,13 +1,3 @@
-// To parse this JSON data, do
-//
-//     final pageContent = pageContentFromJson(jsonString);
-
-import 'dart:convert';
-
-PageContent pageContentFromJson(String str) => PageContent.fromJson(json.decode(str));
-
-String pageContentToJson(PageContent data) => json.encode(data.toJson());
-
 class PageContent {
     final List<String> folders;
     final List<FileElement> files;
