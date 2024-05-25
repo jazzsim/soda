@@ -28,30 +28,35 @@ class VideoThumbnail extends ConsumerWidget {
           Expanded(
             child: Stack(
               children: [
-                ref.watch(thumbnailFutureProvider(url)).when(
-                      data: (data) {
-                        if (data != null) {
-                          return Container(
-                            foregroundDecoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              image: DecorationImage(
-                                image: data.image,
-                                fit: BoxFit.cover,
+                Align(
+                  alignment: Alignment.center,
+                  child: ref.watch(thumbnailFutureProvider(url)).when(
+                        data: (data) {
+                          if (data != null) {
+                            return Container(
+                              foregroundDecoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                image: DecorationImage(
+                                  image: data.image,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                            ),
-                          );
-                        }
-                        return Center(
-                          child: const Icon(
+                            );
+                          }
+                          return const Icon(
                             Icons.play_circle_fill,
                             color: Color.fromARGB(255, 160, 112, 184),
                             size: 100,
-                          ).pb(40),
-                        );
-                      },
-                      error: (err, st) => const Center(child: Icon(Icons.error)),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                    ),
+                          );
+                        },
+                        error: (err, st) => const Center(child: Icon(Icons.error)),
+                        loading: () => const Icon(
+                          Icons.play_circle_fill,
+                          color: Color.fromARGB(255, 160, 112, 184),
+                          size: 100,
+                        ),
+                      ),
+                ),
                 Container(
                   foregroundDecoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),

@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:anydrawer/anydrawer.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/main.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
 import 'package:soda/pages/home_page.dart';
@@ -86,13 +90,13 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
                       double currentVolume = ref.read(volumeStateProvider);
                       if (pointerSignal.scrollDelta.dy < 0) {
                         if (currentVolume + 2.0 > 100) {
-                          ref.read(volumeStateProvider.notifier).update((state) => 100);
+                          ref.read(contentControllerProvider).startCancelTimer();
                         } else {
                           ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 2.0);
                         }
                       } else {
                         if (currentVolume - 2.0 < 0) {
-                          ref.read(volumeStateProvider.notifier).update((state) => 0);
+                          ref.read(contentControllerProvider).startCancelTimer();
                         } else {
                           ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 2.0);
                         }
@@ -192,16 +196,10 @@ class VolumeOverlay extends ConsumerStatefulWidget {
 }
 
 class _VolumeOverlayState extends ConsumerState<VolumeOverlay> {
-  final Duration _volumeDuration = const Duration(milliseconds: 1200);
-
   @override
   Widget build(BuildContext context) {
     ref.listen(volumeStateProvider, (previous, next) {
-      ref.read(videoTimerProvider)?.cancel();
-      ref.read(videoTimerProvider.notifier).state = Timer(_volumeDuration, () {
-        ref.read(showVolumeProvider.notifier).update((state) => false);
-        setState(() {});
-      });
+      ref.read(contentControllerProvider).startCancelTimer();
     });
     return AnimatedOpacity(
       opacity: ref.watch(showVolumeProvider) ? 1 : 0,
@@ -290,7 +288,14 @@ class _ControlsOverlay extends ConsumerWidget {
           width: controlsOverlaySize,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: const Color.fromARGB(240, 243, 243, 243),
+            color: CupertinoColors.systemGrey5,
+            boxShadow: const [
+              BoxShadow(
+                color: CupertinoColors.systemGrey,
+                offset: Offset(0.0, 2.0),
+                blurRadius: 4.0,
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 3, 10, 0),

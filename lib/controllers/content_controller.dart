@@ -182,4 +182,13 @@ class ContentController {
 
     return url;
   }
+
+  void startCancelTimer() {
+    const Duration volumeDuration = Duration(milliseconds: 1200);
+
+    ref.read(videoTimerProvider)?.cancel();
+    ref.read(videoTimerProvider.notifier).state = Timer(volumeDuration, () {
+      ref.read(showVolumeProvider.notifier).update((state) => false);
+    });
+  }
 }

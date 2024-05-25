@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -871,7 +870,6 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
 }
 
 (List<Media>, int) getPlaylist(WidgetRef ref, String url) {
-  String basicAuth = 'Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}';
   String playlistPrefix = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
   List<Media> playlist = [];
   int index = 0;
@@ -881,10 +879,7 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
     }
     playlist.add(
       Media(
-        playlistPrefix + ref.read(videosContentStateProvider)[i].filename,
-        httpHeaders: {
-          "authorization": basicAuth,
-        },
+        ref.read(contentControllerProvider).getUrl(playlistPrefix + url),
       ),
     );
   }
