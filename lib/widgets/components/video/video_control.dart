@@ -90,12 +90,14 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
                       double currentVolume = ref.read(volumeStateProvider);
                       if (pointerSignal.scrollDelta.dy < 0) {
                         if (currentVolume + 2.0 > 100) {
+                          ref.read(volumeStateProvider.notifier).update((state) => 100);
                           ref.read(contentControllerProvider).startCancelTimer();
                         } else {
                           ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 2.0);
                         }
                       } else {
                         if (currentVolume - 2.0 < 0) {
+                          ref.read(volumeStateProvider.notifier).update((state) => 0);
                           ref.read(contentControllerProvider).startCancelTimer();
                         } else {
                           ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 2.0);
@@ -427,22 +429,23 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
     const SingleActivator(LogicalKeyboardKey.arrowUp): () async {
       double currentVolume = player.state.volume;
       if (currentVolume + 5.0 > 100) {
-        await player.setVolume(100);
+        ref.read(volumeStateProvider.notifier).update((state) => 100);
+        ref.read(contentControllerProvider).startCancelTimer();
       } else {
-        await player.setVolume(currentVolume + 5.0).then((value) {});
+        ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 5.0);
       }
-      ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 5.0);
-      ref.read(showVolumeProvider.notifier).update((state) => true);
+      await player.setVolume(ref.read(volumeStateProvider));
     },
     const SingleActivator(LogicalKeyboardKey.arrowDown): () async {
       double currentVolume = player.state.volume;
       if (currentVolume - 5.0 < 0) {
-        await player.setVolume(0);
+        ref.read(volumeStateProvider.notifier).update((state) => 0);
+        ref.read(contentControllerProvider).startCancelTimer();
       } else {
-        await player.setVolume(currentVolume - 5.0);
+        ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 5.0);
       }
-      ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 5.0);
-      ref.read(showVolumeProvider.notifier).update((state) => true);
+
+      await player.setVolume(ref.read(volumeStateProvider));
     },
     const SingleActivator(LogicalKeyboardKey.keyF): () async {
       state.toggleFullscreen();
