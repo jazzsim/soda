@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,14 @@ void main() async {
 
   await PreferencesService.initialize();
   MediaKit.ensureInitialized();
+
+  // clear subtitle cache
+  Directory cache = Directory(".cache/");
+  if (cache.existsSync()) {
+    for (var file in cache.listSync()) {
+      file.deleteSync();
+    }
+  }
 
   runApp(
     const ProviderScope(

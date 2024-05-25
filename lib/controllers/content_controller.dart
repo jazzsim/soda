@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:soda/api/server_api.dart';
 import 'package:soda/modals/http_server.dart';
 import 'package:soda/pages/home_page.dart';
@@ -190,5 +194,82 @@ class ContentController {
     ref.read(videoTimerProvider.notifier).state = Timer(volumeDuration, () {
       ref.read(showVolumeProvider.notifier).update((state) => false);
     });
+  }
+
+  void autoLoadSubs(Player player, String filename) async {
+    List<String> subsExt = ['srt', 'ass', 'sub', 'vtt', 'ssa'];
+
+    for (var otherFile in ref.read(othersContentStateProvider)) {
+      for (var ext in subsExt) {
+        if (otherFile.filename.contains(ext)) {
+          if (compareWithoutExtension(filename, otherFile.filename)) {
+            loadExternalSubs(player, otherFile);
+            // load the first matched
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> loadExternalSubs(Player player, FileElement otherFile) async {
+    File file = File('.cache/${otherFile.filename}');
+    final url = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
+
+    // check if cached
+    if (await file.exists() == false) {
+      final response = await http.get(Uri.parse(getUrl(url) + otherFile.filename));
+      file = await cache(otherFile.filename);
+      await file.writeAsBytes(response.bodyBytes);
+    }
+
+    try {
+      await player.setSubtitleTrack(
+        SubtitleTrack.data(
+          file.readAsStringSync(),
+          title: Uri.decodeComponent(otherFile.filename),
+        ),
+      );
+    } catch (e) {
+      if (e is FileSystemException) {
+        String content = decodeFile(file.readAsBytesSync());
+
+        await player.setSubtitleTrack(
+          SubtitleTrack.data(
+            content,
+            title: Uri.decodeComponent(otherFile.filename),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<File> cache(String filename) async {
+    // Check if the directory exists, if not, create it
+    final cacheDir = Directory('.cache/');
+    if (!(await cacheDir.exists())) {
+      cacheDir.create();
+    }
+    return File('.cache/$filename');
+  }
+
+  String decodeFile(Uint8List fileBytes) {
+    List<Codec> codecList = [ascii, utf8, latin1];
+    String content = "";
+    for (var codec in codecList) {
+      try {
+        content = codec.decode(fileBytes);
+      } catch (e) {
+        log('e $e');
+      }
+    }
+    return content;
+  }
+
+  bool compareWithoutExtension(String string1, String string2) {
+    RegExp regExp = RegExp(r'([^\.]+)');
+    String filename1 = regExp.firstMatch(string1)?.group(1) ?? string1;
+    String filename2 = regExp.firstMatch(string2)?.group(1) ?? string2;
+    return filename1 == filename2;
   }
 }

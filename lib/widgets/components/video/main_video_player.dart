@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:extended_text/extended_text.dart';
@@ -9,6 +8,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/pages/home_page.dart';
+import 'package:soda/widgets/components/dialogs/loading_view.dart';
 import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
 import 'package:soda/widgets/components/primary_button.dart';
 import 'package:soda/widgets/components/secondary_button.dart';
@@ -38,7 +38,7 @@ class MainVideoPlayer extends ConsumerStatefulWidget {
 
 class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   late final videoPlayerHeight = (MediaQuery.of(context).size.height) / 2, videoPlayerWidth = (MediaQuery.of(context).size.width) / 2;
-  late final player = Player();
+  final player = Player();
   late final controller = VideoController(player);
 
   @override
@@ -64,6 +64,8 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
           index: record.$2,
         );
         await player.open(playlist);
+        // auto load based on matching filename
+        ref.read(contentControllerProvider).autoLoadSubs(player, widget.url);
       },
     );
   }
@@ -200,7 +202,6 @@ class _EndDrawerWidgetState extends ConsumerState<EndDrawerWidget> {
                 ),
               ],
             ),
-            // const Divider(),
             Expanded(
               child: TabBarView(
                 children: <Widget>[
@@ -337,17 +338,6 @@ class SettingTab extends ConsumerStatefulWidget {
 class _SettingTabState extends ConsumerState<SettingTab> {
   List<SubtitleTrack> subtitles = [];
   int? selectedIndex;
-
-  @override
-  void initState() {
-    super.initState();
-
-    widget.player.stream.subtitle.listen((event) {
-      for (var element in event) {
-        log(element);
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -585,6 +575,7 @@ class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
                                       ref.watch(browsePathStateProvider.notifier).update((state) => '$state$folder');
                                     }
                                     ref.read(contentControllerProvider).getPageContent(browse: true).then((value) {
+                                      selectedIndex = -1;
                                       loadingOverlayEntry?.remove();
                                     }).catchError((err, st) {
                                       showToast(context, ToastType.error, err);
@@ -648,19 +639,12 @@ class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
                                 ? null
                                 : () async {
                                     List<String> subsExt = ['srt', 'ass', 'sub', 'vtt', 'ssa'];
-                                    final url = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
                                     final file = ref.read(othersContentStateProvider)[selectedIndex];
                                     for (var ext in subsExt) {
                                       if (file.filename.contains(ext)) {
                                         loadingOverlayEntry = showLoadingOverlay(context);
                                         Overlay.of(context).insert(loadingOverlayEntry!);
-                                        await Future.delayed(const Duration(milliseconds: 500));
-                                        await widget.player.setSubtitleTrack(
-                                          SubtitleTrack.uri(
-                                            url + file.filename,
-                                            title: Uri.decodeComponent(file.filename),
-                                          ),
-                                        );
+                                        await ref.read(contentControllerProvider).loadExternalSubs(widget.player, file);
                                         loadingOverlayEntry?.remove();
                                         widget.overlayEntry?.remove();
                                         return;
@@ -694,35 +678,22 @@ OverlayEntry showLoadingOverlay(BuildContext context) {
   return OverlayEntry(
     builder: (context) {
       return Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.8 - 4,
-          height: MediaQuery.of(context).size.height * 0.8 - 4,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15.0),
-            color: Colors.black.withOpacity(0.5),
-          ),
-          child: Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15.0),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 90.0, minWidth: 200.0),
-                color: const Color.fromARGB(150, 0, 0, 0),
-                child: const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Please hold...',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 15.0),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0),
         ),
+        backgroundColor: const Color.fromARGB(150, 0, 0, 0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            LoadingView(35).py(8.0),
+            const Text(
+              'Loading',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 15.0),
+            ),
+          ],
+        ).py(12),
       );
     },
   );
