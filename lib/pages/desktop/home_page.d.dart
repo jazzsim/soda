@@ -297,9 +297,9 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
         crossAxisSpacing: 12.0,
         mainAxisSpacing: 12.0,
       ),
-      itemCount: ref.watch(widget.contentStateProvider).length,
+      itemCount: ref.read(widget.contentStateProvider).length,
       itemBuilder: (BuildContext context, int index) {
-        final file = ref.watch(widget.contentStateProvider)[index];
+        final file = ref.read(widget.contentStateProvider)[index];
         final media = file.media.toLowerCase();
         final url = file.filename;
         switch (media) {

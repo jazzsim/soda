@@ -13,8 +13,8 @@ class ServerApi {
     throw Exception();
   }
 
-  Future<ThumbnailImage> getThumbnail(String url) async {
-    final res = await BaseClient().get('thumbnail', query: {'url': url});
+  Future<ThumbnailImage> getThumbnail(String url, String filename) async {
+    final res = await BaseClient().get('thumbnail', query: {'url': url, 'filename': filename});
     if (res != null) {
       return ThumbnailImage.fromJson(res);
     }

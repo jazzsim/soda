@@ -278,7 +278,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                       });
                     },
                     child: Container(
-                      color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                      color: selectedIndex == e.key ? const Color.fromARGB(255, 55, 84, 237) : Colors.transparent,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Row(
@@ -388,7 +388,7 @@ class _SettingTabState extends ConsumerState<SettingTab> {
                                   selectedIndex = e.key;
                                 }),
                                 child: Container(
-                                  color: selectedIndex == e.key ? const Color.fromARGB(255, 16, 99, 240) : Colors.transparent,
+                                  color: selectedIndex == e.key ? const Color.fromARGB(255, 55, 84, 237) : Colors.transparent,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 0.5),
                                     child: Row(

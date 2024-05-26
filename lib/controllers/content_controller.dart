@@ -5,7 +5,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:soda/api/server_api.dart';
@@ -16,10 +15,6 @@ import 'package:soda/widgets/components/video/main_video_player.dart';
 import 'package:soda/widgets/components/video/video_control.dart';
 
 import '../modals/page_content.dart';
-
-final thumbnailFutureProvider = FutureProvider.family<Image?, String>((ref, url) async {
-  return ref.read(contentControllerProvider).vidThumbnail(url);
-});
 
 final httpServerStateProvider = StateProvider<HttpServer>((ref) => HttpServer(url: '', username: '', password: ''));
 
@@ -56,6 +51,8 @@ class ContentController {
   ContentController(this.ref);
 
   Future<void> getPageContent({bool browse = false}) async {
+    clear();
+
     final String path = browse ? ref.read(browsePathStateProvider) : ref.read(pathStateProvider);
     // append path to selected server
     HttpServer targetServer = ref.read(httpServerStateProvider).copyWith(url: ref.read(httpServerStateProvider).url + path);
@@ -160,20 +157,15 @@ class ContentController {
   }
 
   // video
-  Future<Image?> vidThumbnail(String url) async {
-    url = getUrl(url);
+  Future<String> vidThumbnail(String url, String filename) async {
     try {
-      final res = await ServerApi().getThumbnail(url);
-      final bytes = base64Decode(res.thumbnail);
-      return Image.memory(
-        bytes,
-        scale: 0.2,
-        fit: BoxFit.cover,
-      );
+      final res = await ServerApi().getThumbnail(getUrl(url), filename);
+      return res.thumbnail;
     } catch (e) {
       log("error $e");
-      return null;
     }
+
+    return '';
   }
 
   String getUrl(String url) {
@@ -271,5 +263,12 @@ class ContentController {
     String filename1 = regExp.firstMatch(string1)?.group(1) ?? string1;
     String filename2 = regExp.firstMatch(string2)?.group(1) ?? string2;
     return filename1 == filename2;
+  }
+
+  void clear() {
+    ref.invalidate(imagesContentStateProvider);
+    ref.invalidate(videosContentStateProvider);
+    ref.invalidate(documentsContentStateProvider);
+    ref.invalidate(othersContentStateProvider);
   }
 }
