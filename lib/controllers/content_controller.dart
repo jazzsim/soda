@@ -206,7 +206,7 @@ class ContentController {
 
   Future<void> loadExternalSubs(Player player, FileElement otherFile) async {
     File file = File('.cache/${otherFile.filename}');
-    final url = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
+    final url = ref.read(httpServerStateProvider).url + ref.read(browsePathStateProvider);
 
     // check if cached
     if (await file.exists() == false) {
