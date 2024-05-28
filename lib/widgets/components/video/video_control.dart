@@ -360,7 +360,7 @@ class _ControlsOverlay extends ConsumerWidget {
                                 widthPercentage: 0.15,
                                 maxDragExtent: 120,
                                 closeOnClickOutside: true,
-                                closeOnEscapeKey: true,
+                                closeOnEscapeKey: false,
                                 backdropOpacity: 0.5,
                                 borderRadius: 0,
                               ),
