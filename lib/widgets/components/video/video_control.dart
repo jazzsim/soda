@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:anydrawer/anydrawer.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +24,9 @@ final showVideoControlProvider = StateProvider<bool>((ref) => false);
 
 final timerProvider = StateProvider<Timer?>((ref) => null);
 
-final durationProvider = StateProvider<Duration>((ref) => const Duration(milliseconds: 850));
+final durationProvider = StateProvider<Duration>((ref) => const Duration(milliseconds: 450));
+
+final anyDrawerControllerProvider = Provider<AnyDrawerController?>((ref) => AnyDrawerController());
 
 final endDrawerWidthProvider = StateProvider<bool>((ref) => false);
 
@@ -281,12 +281,13 @@ class _ControlsOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const double controlsOverlaySize = 400;
+    double controlsOverlaySize = MediaQuery.sizeOf(context).width / 6;
 
     return StreamBuilder<Duration>(
       stream: player.stream.position,
       builder: (context, snapshot) {
         return Container(
+          constraints: const BoxConstraints(minWidth: 350),
           width: controlsOverlaySize,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
@@ -304,7 +305,8 @@ class _ControlsOverlay extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
+                Container(
+                  constraints: const BoxConstraints(minWidth: 350),
                   width: controlsOverlaySize,
                   height: 70,
                   child: Stack(
@@ -360,10 +362,11 @@ class _ControlsOverlay extends ConsumerWidget {
                                 widthPercentage: 0.15,
                                 maxDragExtent: 120,
                                 closeOnClickOutside: true,
-                                closeOnEscapeKey: false,
+                                closeOnEscapeKey: true,
                                 backdropOpacity: 0.5,
                                 borderRadius: 0,
                               ),
+                              controller: ref.read(anyDrawerControllerProvider),
                             );
                           },
                           icon: const Icon(

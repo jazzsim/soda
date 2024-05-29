@@ -87,30 +87,21 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
             Expanded(
               child: SizedBox(
                 width: MediaQuery.of(context).size.width,
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Stack(
+                child: Video(
+                  wakelock: false,
+                  subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
+                  controller: controller,
+                  controls: (state) {
+                    return Stack(
                       children: [
-                        Video(
-                          wakelock: false,
-                          subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
-                          controller: controller,
-                          controls: (state) {
-                            return Stack(
-                              children: [
-                                BufferingWidget(player: player),
-                                VideoControlWidget(
-                                  player: player,
-                                  state: state,
-                                ),
-                              ],
-                            );
-                          },
+                        BufferingWidget(player: player),
+                        VideoControlWidget(
+                          player: player,
+                          state: state,
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -268,7 +259,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                   onDoubleTap: () async {
                     await widget.player.jump(e.key).then((_) {
                       ref.read(playingVideoProvider.notifier).update((state) => e.key);
-                      Navigator.of(context).pop();
+                      ref.read(anyDrawerControllerProvider)?.close();
                     });
                   },
                   child: Listener(
@@ -577,6 +568,7 @@ class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
                                     ref.read(contentControllerProvider).getPageContent(browse: true).then((value) {
                                       selectedIndex = -1;
                                       loadingOverlayEntry?.remove();
+                                      ref.read(anyDrawerControllerProvider)?.close();
                                     }).catchError((err, st) {
                                       showToast(context, ToastType.error, err);
                                     });
@@ -845,12 +837,13 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
   List<Media> playlist = [];
   int index = 0;
   for (var i = 0; i < ref.read(videosContentStateProvider).length; i++) {
-    if (url == ref.read(videosContentStateProvider)[i].filename) {
+    final videoInPlaylistUrl = ref.read(videosContentStateProvider)[i].filename;
+    if (url == videoInPlaylistUrl) {
       index = i;
     }
     playlist.add(
       Media(
-        ref.read(contentControllerProvider).getUrl(playlistPrefix + url),
+        ref.read(contentControllerProvider).getUrl(playlistPrefix + videoInPlaylistUrl),
       ),
     );
   }
