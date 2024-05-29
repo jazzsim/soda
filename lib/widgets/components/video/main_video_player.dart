@@ -22,6 +22,8 @@ final playlistProvider = StateProvider<List<Media>>((ref) => []);
 
 final playingVideoProvider = StateProvider<int>((ref) => 0);
 
+final alterVideoDurationStateProvider = StateProvider<bool>((ref) => false);
+
 final browsePathStateProvider = StateProvider.autoDispose<String>((ref) => ref.read(pathStateProvider));
 
 final subtitlePositionStateProvider = StateProvider.autoDispose<double>((ref) => 0);
@@ -766,13 +768,12 @@ class _ProgressBarState extends State<ProgressBar> {
                   ),
                 );
               },
-            ).pltrb(60, 4, 60, 0),
+            ).pltrb(60, 0, 60, 0),
           ),
           if (onHover)
             Positioned(
-              // left: cursorPosition.dx - 21,
               left: cursorPosition.dx + 40,
-              top: -4,
+              top: -6,
               child: Text(durationToStringWithoutMilliseconds(timeStamps ?? widget.player.state.position),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400, fontSize: 9))
                   .pa(5),

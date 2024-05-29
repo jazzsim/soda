@@ -294,7 +294,7 @@ class _ControlsOverlay extends ConsumerWidget {
       stream: player.stream.position,
       builder: (context, snapshot) {
         return Container(
-          constraints: const BoxConstraints(minWidth: 350),
+          constraints: const BoxConstraints(minWidth: 380),
           width: controlsOverlaySize,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
@@ -313,9 +313,9 @@ class _ControlsOverlay extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  constraints: const BoxConstraints(minWidth: 350),
+                  constraints: const BoxConstraints(minWidth: 380),
                   width: controlsOverlaySize,
-                  height: 70,
+                  height: 68,
                   child: Stack(
                     children: [
                       Align(
@@ -328,8 +328,11 @@ class _ControlsOverlay extends ConsumerWidget {
                           hoverColor: Colors.transparent,
                           highlightColor: Colors.transparent,
                           splashColor: Colors.transparent,
-                          icon: Icon(
-                            player.state.playing ? Icons.pause : Icons.play_arrow,
+                          icon: StreamBuilder<bool>(
+                            stream: player.stream.playing,
+                            builder: (context, snapshot) => Icon(
+                              snapshot.data == true ? Icons.pause : Icons.play_arrow,
+                            ),
                           ),
                         ),
                       ),
@@ -361,19 +364,20 @@ class _ControlsOverlay extends ConsumerWidget {
                         child: IconButton(
                           hoverColor: Colors.transparent,
                           highlightColor: Colors.transparent,
-                          onPressed: () async {
+                          onPressed: () {
                             showDrawer(
                               context,
                               builder: (context) => EndDrawerWidget(player: player),
+                              controller: ref.read(anyDrawerControllerProvider),
+                              onClose: () => showControls(ref, true),
                               config: const DrawerConfig(
-                                widthPercentage: 0.15,
+                                widthPercentage: 0.25,
                                 maxDragExtent: 120,
                                 closeOnClickOutside: true,
                                 closeOnEscapeKey: true,
                                 backdropOpacity: 0.5,
                                 borderRadius: 0,
                               ),
-                              controller: ref.read(anyDrawerControllerProvider),
                             );
                           },
                           icon: const Icon(
@@ -384,25 +388,39 @@ class _ControlsOverlay extends ConsumerWidget {
                       ),
                       Align(
                         alignment: Alignment.bottomCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            children: [
-                              Text(
-                                durationToStringWithoutMilliseconds(player.state.position),
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            SizedBox(
+                              height: 35,
+                              width: 55,
+                              child: Center(
+                                child: Text(
+                                  durationToStringWithoutMilliseconds(player.state.position),
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                ),
                               ),
-                              const Spacer(),
-                              Text(
-                                durationToStringWithoutMilliseconds(player.state.duration),
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      fontWeight: FontWeight.w400,
-                                    ),
+                            ),
+                            GestureDetector(
+                              onTap: () => ref.read(alterVideoDurationStateProvider.notifier).update((state) => !state),
+                              child: SizedBox(
+                                height: 35,
+                                width: 55,
+                                child: Center(
+                                  child: Text(
+                                    ref.watch(alterVideoDurationStateProvider)
+                                        ? "- ${durationToStringWithoutMilliseconds(player.state.duration - player.state.position)}"
+                                        : durationToStringWithoutMilliseconds(player.state.duration),
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                  ),
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                       Align(
@@ -462,6 +480,7 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
     },
     const SingleActivator(LogicalKeyboardKey.keyN): () async {
       await player.next();
+      ref.read(playingVideoProvider.notifier).update((state) => state++);
     }
   };
 }
