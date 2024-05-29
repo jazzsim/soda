@@ -78,6 +78,13 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
         bindings: getShortcuts(widget.state, context, ref, widget.player),
         child: FocusScope(
           autofocus: true,
+          onFocusChange: (value) async {
+            // trigger to hide controls when video enter&exit fullscreen
+            if (value) {
+              await Future.delayed(const Duration(milliseconds: 1000));
+              _getCursor();
+            }
+          },
           child: Stack(
             children: [
               MouseRegion(
