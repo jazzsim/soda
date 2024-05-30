@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:anydrawer/anydrawer.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/controllers/content_controller.dart';
@@ -25,8 +28,6 @@ final showVideoControlProvider = StateProvider<bool>((ref) => false);
 final timerProvider = StateProvider<Timer?>((ref) => null);
 
 final durationProvider = StateProvider<Duration>((ref) => const Duration(milliseconds: 450));
-
-final anyDrawerControllerProvider = Provider<AnyDrawerController?>((ref) => AnyDrawerController());
 
 final endDrawerWidthProvider = StateProvider<bool>((ref) => false);
 
@@ -216,30 +217,34 @@ class _VolumeOverlayState extends ConsumerState<VolumeOverlay> {
       duration: const Duration(
         milliseconds: 180,
       ),
-      child: Container(
-        width: 140,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(
-            12,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+          child: Container(
+            width: 140,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: CupertinoColors.systemGrey6.withOpacity(0.6),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Volume: ${ref.watch(volumeStateProvider).floorToDouble().round()}",
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(
+                  width: 115,
+                  child: LinearProgressIndicator(
+                    value: widget.player.state.volume / 100,
+                    color: Colors.blue,
+                  ).pt(5),
+                ),
+              ],
+            ).pltrb(12, 8, 12, 12),
           ),
-          color: const Color.fromARGB(237, 238, 238, 238),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Volume: ${ref.watch(volumeStateProvider).floorToDouble().round()}",
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            SizedBox(
-              width: 115,
-              child: LinearProgressIndicator(
-                value: widget.player.state.volume / 100,
-                color: Colors.blue,
-              ).pt(5),
-            ),
-          ],
-        ).pltrb(12, 8, 12, 12),
       ),
     );
   }
@@ -293,144 +298,142 @@ class _ControlsOverlay extends ConsumerWidget {
     return StreamBuilder<Duration>(
       stream: player.stream.position,
       builder: (context, snapshot) {
-        return Container(
-          constraints: const BoxConstraints(minWidth: 380),
-          width: controlsOverlaySize,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: CupertinoColors.systemGrey5,
-            boxShadow: const [
-              BoxShadow(
-                color: CupertinoColors.systemGrey,
-                offset: Offset(0.0, 2.0),
-                blurRadius: 4.0,
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 380),
+              width: controlsOverlaySize,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: CupertinoColors.systemGrey6.withOpacity(0.6),
               ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 3, 10, 0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  constraints: const BoxConstraints(minWidth: 380),
-                  width: controlsOverlaySize,
-                  height: 68,
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: IconButton(
-                          onPressed: () => player.state.playing ? player.pause() : player.play(),
-                          alignment: Alignment.center,
-                          iconSize: 42,
-                          padding: EdgeInsets.zero,
-                          hoverColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
-                          splashColor: Colors.transparent,
-                          icon: StreamBuilder<bool>(
-                            stream: player.stream.playing,
-                            builder: (context, snapshot) => Icon(
-                              snapshot.data == true ? Icons.pause : Icons.play_arrow,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 3, 10, 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 380),
+                      width: controlsOverlaySize,
+                      height: 68,
+                      child: Stack(
+                        children: [
+                          Align(
+                            alignment: Alignment.topCenter,
+                            child: IconButton(
+                              onPressed: () => player.state.playing ? player.pause() : player.play(),
+                              alignment: Alignment.center,
+                              iconSize: 42,
+                              padding: EdgeInsets.zero,
+                              hoverColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              splashColor: Colors.transparent,
+                              icon: StreamBuilder<bool>(
+                                stream: player.stream.playing,
+                                builder: (context, snapshot) => Icon(
+                                  snapshot.data == true ? Icons.pause : Icons.play_arrow,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 13,
-                        left: 0,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(right: 10),
-                              child: Icon(
-                                Icons.volume_up,
+                          Positioned(
+                            top: 13,
+                            left: 0,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 10),
+                                  child: Icon(
+                                    Icons.volume_up,
+                                    size: 20,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 55,
+                                  child: VolumeSlider(
+                                    player: player,
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: IconButton(
+                              hoverColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              onPressed: () {
+                                showDrawer(
+                                  context,
+                                  builder: (context) => EndDrawerWidget(player: player),
+                                  onClose: () => showControls(ref, true),
+                                  config: const DrawerConfig(
+                                    widthPercentage: 0.25,
+                                    maxDragExtent: 120,
+                                    closeOnClickOutside: true,
+                                    closeOnEscapeKey: true,
+                                    backdropOpacity: 0.5,
+                                    borderRadius: 0,
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.playlist_play_rounded,
                                 size: 20,
                               ),
                             ),
-                            SizedBox(
-                              width: 55,
-                              child: VolumeSlider(
-                                player: player,
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: IconButton(
-                          hoverColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
-                          onPressed: () {
-                            showDrawer(
-                              context,
-                              builder: (context) => EndDrawerWidget(player: player),
-                              controller: ref.read(anyDrawerControllerProvider),
-                              onClose: () => showControls(ref, true),
-                              config: const DrawerConfig(
-                                widthPercentage: 0.25,
-                                maxDragExtent: 120,
-                                closeOnClickOutside: true,
-                                closeOnEscapeKey: true,
-                                backdropOpacity: 0.5,
-                                borderRadius: 0,
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.playlist_play_rounded,
-                            size: 20,
                           ),
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            SizedBox(
-                              height: 35,
-                              width: 55,
-                              child: Center(
-                                child: Text(
-                                  durationToStringWithoutMilliseconds(player.state.position),
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => ref.read(alterVideoDurationStateProvider.notifier).update((state) => !state),
-                              child: SizedBox(
-                                height: 35,
-                                width: 55,
-                                child: Center(
-                                  child: Text(
-                                    ref.watch(alterVideoDurationStateProvider)
-                                        ? "- ${durationToStringWithoutMilliseconds(player.state.duration - player.state.position)}"
-                                        : durationToStringWithoutMilliseconds(player.state.duration),
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          fontWeight: FontWeight.w400,
-                                        ),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                SizedBox(
+                                  height: 35,
+                                  width: 55,
+                                  child: Center(
+                                    child: Text(
+                                      durationToStringWithoutMilliseconds(player.state.position),
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                GestureDetector(
+                                  onTap: () => ref.read(alterVideoDurationStateProvider.notifier).update((state) => !state),
+                                  child: SizedBox(
+                                    height: 35,
+                                    width: 55,
+                                    child: Center(
+                                      child: Text(
+                                        ref.watch(alterVideoDurationStateProvider)
+                                            ? "- ${durationToStringWithoutMilliseconds(player.state.duration - player.state.position)}"
+                                            : durationToStringWithoutMilliseconds(player.state.duration),
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: ProgressBar(player: player),
+                          ),
+                        ],
                       ),
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: ProgressBar(player: player),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -463,6 +466,7 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
         ref.read(volumeStateProvider.notifier).update((state) => currentVolume + 5.0);
       }
       await player.setVolume(ref.read(volumeStateProvider));
+      ref.read(showVolumeProvider.notifier).update((state) => true);
     },
     const SingleActivator(LogicalKeyboardKey.arrowDown): () async {
       double currentVolume = player.state.volume;
@@ -472,15 +476,26 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
       } else {
         ref.read(volumeStateProvider.notifier).update((state) => currentVolume - 5.0);
       }
-
       await player.setVolume(ref.read(volumeStateProvider));
+      ref.read(showVolumeProvider.notifier).update((state) => true);
     },
     const SingleActivator(LogicalKeyboardKey.keyF): () async {
       state.toggleFullscreen();
     },
     const SingleActivator(LogicalKeyboardKey.keyN): () async {
       await player.next();
-      ref.read(playingVideoProvider.notifier).update((state) => state++);
+      ref.read(playingVideoProvider.notifier).update((state) => state += 1);
+    },
+    LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS): () async {
+      final Uint8List? screenshot = await player.screenshot();
+
+      String formatDate() => DateFormat('yyyy-MM-dd_HHmmss').format(DateTime.now());
+
+      FileSaver.instance.saveFile(
+        name: 'screenshot_${formatDate()}.png',
+        bytes: screenshot,
+        mimeType: MimeType.png,
+      );
     }
   };
 }
