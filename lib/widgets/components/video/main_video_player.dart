@@ -261,7 +261,6 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                   onDoubleTap: () async {
                     await widget.player.jump(e.key).then((_) {
                       ref.read(playingVideoProvider.notifier).update((state) => e.key);
-                      ref.read(anyDrawerControllerProvider)?.close();
                     });
                   },
                   child: Listener(
@@ -570,7 +569,6 @@ class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
                                     ref.read(contentControllerProvider).getPageContent(browse: true).then((value) {
                                       selectedIndex = -1;
                                       loadingOverlayEntry?.remove();
-                                      ref.read(anyDrawerControllerProvider)?.close();
                                     }).catchError((err, st) {
                                       showToast(context, ToastType.error, err);
                                     });
