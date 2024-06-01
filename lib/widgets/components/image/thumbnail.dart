@@ -16,7 +16,7 @@ class ImageThumbnail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     String basicAuth = 'Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}';
     String readableFile = Uri.decodeComponent(file.filename);
-    String imgUrl = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider) + url;
+    String imgUrl = ref.read(baseURLStateProvider) + url;
 
     return Column(
       children: [

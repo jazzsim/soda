@@ -1,59 +1,43 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:internet_file/internet_file.dart';
-import 'package:pdfx/pdfx.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdfrx/pdfrx.dart';
+import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/modals/page_content.dart';
 import 'package:soda/widgets/components/documents/pdf_viewer.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
-class DocumentThumbnail extends StatelessWidget {
+class DocumentThumbnail extends ConsumerStatefulWidget {
   final FileElement file;
-  final String url;
-  const DocumentThumbnail(this.file, {required this.url, super.key});
+  const DocumentThumbnail(this.file, {super.key});
 
   @override
+  ConsumerState<DocumentThumbnail> createState() => _DocumentThumbnailState();
+}
+
+class _DocumentThumbnailState extends ConsumerState<DocumentThumbnail> {
+  @override
   Widget build(BuildContext context) {
-    String readableFile = Uri.decodeComponent(file.filename);
+    String readableFile = Uri.decodeComponent(widget.file.filename);
 
     return GestureDetector(
-      onTap: isPDFFile(file.filename)
+      onTap: isPDFFile(widget.file.filename)
           ? () {
-              PdfControllerPinch pdfController = PdfControllerPinch(
-                document: PdfDocument.openData(InternetFile.get(url)),
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => PDFViwer(
+                    widget.file,
+                  ),
+                ),
               );
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => PDFViwer(file: file, pdfController: pdfController),
-              ));
             }
-          : () {},
+          : null,
       child: Column(
         children: [
           Expanded(
             child: Stack(
               children: [
-                isPDFFile(file.filename)
-                    ? FutureBuilder<Map<int, Uint8List>>(
-                        future: pdfThumbnail(url),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            final images = snapshot.data!;
-                            final image = images[1];
-                            return Container(
-                              foregroundDecoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                color: Colors.grey[200],
-                                image: DecorationImage(
-                                  image: MemoryImage(image!),
-                                  fit: BoxFit.fitHeight,
-                                ),
-                              ),
-                            );
-                          } else {
-                            return Center(
-                              child: const CircularProgressIndicator().px(40),
-                            );
-                          }
-                        })
+                isPDFFile(widget.file.filename)
+                    ? PdfViewerWidget(widget.file.filename)
                     : const Center(
                         child: Icon(
                           Icons.description,
@@ -111,52 +95,39 @@ bool isPDFFile(String filename) {
   return lowercaseFilename.endsWith('.pdf');
 }
 
-Future<Map<int, Uint8List>> pdfThumbnail(String url) async {
-  final images = <int, Uint8List>{};
-  final doc = await PdfDocument.openData(InternetFile.get(url));
-  final page = await doc.getPage(1);
-  final pageImage = await page.render(
-    width: page.width,
-    height: page.height,
-  );
-  images[1] = pageImage!.bytes;
-  await page.close();
-  return images;
+class PdfViewerWidget extends ConsumerStatefulWidget {
+  final String filename;
+  const PdfViewerWidget(this.filename, {super.key});
+
+  @override
+  ConsumerState<PdfViewerWidget> createState() => _PdfViewerWidgetState();
 }
 
-class DocumentThumbnailDekstop extends StatelessWidget {
-  final FileElement file;
-  const DocumentThumbnailDekstop(this.file, {super.key});
+class _PdfViewerWidgetState extends ConsumerState<PdfViewerWidget> {
+  final controller = PdfViewerController();
+  bool zoomed = false;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shadowColor: Colors.transparent,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Spacer(),
-          const SizedBox(
-              height: 120,
-              child: ClipRRect(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(10.0),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.description,
-                    color: Colors.teal,
-                    size: 60,
-                  ),
-                ),
-              )),
-          const Spacer(),
-          Text(
-            Uri.decodeComponent(file.filename),
-            style: Theme.of(context).textTheme.titleSmall,
-            maxLines: 2,
-          ).pa(12),
-        ],
+    // delay for zoom animation
+    controller.addListener(() async {
+      if (controller.isReady && !zoomed) {
+        controller.zoomUp();
+        zoomed = true;
+        await Future.delayed(const Duration(milliseconds: 500));
+        setState(() {});
+      }
+    });
+    return Opacity(
+      opacity: zoomed ? 1 : 0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: PdfViewer.uri(
+          controller: controller,
+          Uri.parse(
+            ref.read(contentControllerProvider).getUrl(ref.read(baseURLStateProvider) + widget.filename),
+          ),
+        ),
       ),
     );
   }

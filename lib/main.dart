@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:soda/constants/colours.dart';
 import 'package:soda/pages/home_page.dart';
@@ -19,6 +18,7 @@ void main() async {
 
   WindowOptions windowOptions = const WindowOptions(
     center: true,
+    size: Size(1400, 800),
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -43,39 +43,19 @@ void main() async {
   );
 }
 
-// The route configuration.
-final GoRouter _router = GoRouter(
-  routes: <RouteBase>[
-    GoRoute(
-      path: '/',
-      builder: (BuildContext context, GoRouterState state) {
-        return const HomePage();
-      },
-      // routes: <RouteBase>[
-      //   GoRoute(
-      //     path: 'home',
-      //     builder: (BuildContext context, GoRouterState state) {
-      //       return const HomePage();
-      //     },
-      //   ),
-      // ],
-    ),
-  ],
-);
-
 class MyApp extends StatelessWidget {
   static const platform = MethodChannel('jazzsim.soda/cursor');
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Soda',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: themePrimary),
       ),
-      routerConfig: _router,
+      home: const HomePage(),
     );
   }
 }

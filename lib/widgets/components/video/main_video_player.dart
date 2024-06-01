@@ -832,7 +832,7 @@ class _VolumeSliderState extends ConsumerState<VolumeSlider> {
 }
 
 (List<Media>, int) getPlaylist(WidgetRef ref, String url) {
-  String playlistPrefix = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider);
+  String playlistPrefix = ref.read(baseURLStateProvider);
   List<Media> playlist = [];
   int index = 0;
   for (var i = 0; i < ref.read(videosContentStateProvider).length; i++) {

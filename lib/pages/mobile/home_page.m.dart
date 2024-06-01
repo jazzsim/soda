@@ -56,7 +56,7 @@ class HomePageMobile extends ConsumerWidget {
                   ),
                 ).px(5),
               )
-              .toList(),
+              ,
         ]
       ]),
       body: ref.watch(pageContentStateProvider).files.isEmpty && ref.watch(pageContentStateProvider).folders.isEmpty
@@ -276,7 +276,7 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
             case 'video':
               return VideoThumbnail(file);
             case 'document':
-              return DocumentThumbnail(file, url: url);
+              return DocumentThumbnail(file);
             default:
               return OthersThumbnail(file);
           }

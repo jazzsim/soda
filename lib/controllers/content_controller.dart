@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:soda/api/server_api.dart';
 import 'package:soda/modals/http_server.dart';
 import 'package:soda/pages/home_page.dart';
@@ -19,6 +20,8 @@ import '../modals/page_content.dart';
 final httpServerStateProvider = StateProvider<HttpServer>((ref) => HttpServer(url: '', username: '', password: ''));
 
 final pathStateProvider = StateProvider<String>((ref) => '');
+
+final baseURLStateProvider = StateProvider<String>((ref) => ref.watch(httpServerStateProvider).url + ref.watch(pathStateProvider));
 
 final contentControllerProvider = Provider((ref) => ContentController(ref));
 
@@ -49,6 +52,10 @@ final othersContentStateProvider = StateProvider<List<FileElement>>((ref) => [])
 class ContentController {
   final ProviderRef<Object?> ref;
   ContentController(this.ref);
+
+  Map<String, String> authHeader() => {
+        "Authorization": "Basic ${base64.encode(utf8.encode('${ref.read(httpServerStateProvider).username}:${ref.read(httpServerStateProvider).password}'))}",
+      };
 
   Future<void> getPageContent({bool browse = false}) async {
     clear();
@@ -157,8 +164,9 @@ class ContentController {
   }
 
   // video
-  Future<String> vidThumbnail(String url, String filename) async {
+  Future<String> vidThumbnail(String filename) async {
     try {
+      String url = ref.read(baseURLStateProvider) + filename;
       final res = await ServerApi().getThumbnail(getUrl(url), filename);
       return res.thumbnail;
     } catch (e) {
@@ -166,6 +174,17 @@ class ContentController {
     }
 
     return '';
+  }
+
+  // pdf
+  Future<String> pdfThumbnail(String filename) async {
+    try {
+      String url = ref.read(baseURLStateProvider) + filename;
+      final doc = PdfViewer.uri(Uri.parse(getUrl(url)));
+      return doc.documentRef.sourceName;
+      // return res.thumbnail;
+    } catch (e) {}
+    return "";
   }
 
   String getUrl(String url) {

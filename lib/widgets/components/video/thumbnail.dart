@@ -21,8 +21,7 @@ class _VideoThumbnailState extends ConsumerState<VideoThumbnail> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      String url = ref.read(httpServerStateProvider).url + ref.read(pathStateProvider) + widget.file.filename;
-      await ref.read(contentControllerProvider).vidThumbnail(url, widget.file.filename).then((value) {
+      await ref.read(contentControllerProvider).vidThumbnail(widget.file.filename).then((value) {
         if (mounted) {
           setState(() {
             thumbnailUrl = value;
