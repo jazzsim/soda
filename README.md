@@ -1,20 +1,27 @@
 # Soda
-The main purpose of this  project is to watch videos, view images and most of the documents from HTML server/open directory without downloading them. 
+This project allows you to browse from HTML server/open directory without downloading them. A Go WebServer is **required** to run this application. *refer [Soda-Go](https://github.com/jazzsim/soda-go)*
 
-<img src="https://github.com/jazzsim/soda/assets/24294128/c4f132dd-e291-4852-ac7f-22102d081a26" width="500" height="300">
-<img src="https://github.com/jazzsim/soda/assets/24294128/d7c3557b-47db-4df2-b68c-56cd5ecd1649" width="500" height="300">
-<img src="https://github.com/jazzsim/soda/assets/24294128/0c5f7e2e-8314-4c09-8af7-ad8ec8529951" width="500" height="300">
-<img src="https://github.com/jazzsim/soda/assets/24294128/c2df60e6-bb1c-4b6e-9dc3-4579840718f4" width="500" height="300">
+###### Update June 2024: Video player development is considered done, with some UX enhancement left. Next up, will be the image and pdf viewing functions. Follow up with download from the server function. After enhancing the application UI/UX, there will be a release version.
 
-# Update April 2024
-This project is resumed with [media_kit](https://pub.dev/packages/media_kit) for video playback feature. Web is not supported as of now.
+<img src="https://github.com/jazzsim/soda/assets/24294128/c4f132dd-e291-4852-ac7f-22102d081a26" width="420">
+<img src="https://github.com/jazzsim/soda/assets/24294128/d7c3557b-47db-4df2-b68c-56cd5ecd1649" width="420">
+<img src="https://github.com/jazzsim/soda/assets/24294128/0c5f7e2e-8314-4c09-8af7-ad8ec8529951" width="420">
+<img src="https://github.com/jazzsim/soda/assets/24294128/c2df60e6-bb1c-4b6e-9dc3-4579840718f4" width="420">
 
-# Challanges met
-1. Video\
-  The main issue for both web and app platforms is the container incompatibility with ```video_player 2.8.1```. Most of the video contents hosted on the servers contain various file types such as .mp4, .avi, .mkv, .m4v, .webm, etc. Some of the formats listed are not yet supported by the package on one platform or both platforms.
 
-2. Images\
-  CORS issue was encountered while loading images on the web platform. Since we are loading the image from other domains and have no controls over the CORS policy, the images would be blocked by CORS policy.
+## Video Player
 
-3. Documemts\
-  A pdf viewer was implemented on app through ```pdfx 2.5.0```. The viewing pdf and pdf thumbnail generation works on app but not on web due to this project's Flutter version (```3.2.0```) conflicting with the web support of ```pdfx 2.5.0```.
+<img width="420" alt="7599849c-4ce2-4730-86f8-07689df4ede3" src="https://github.com/jazzsim/soda-flutter/assets/24294128/9b3ee003-9f30-48ce-9baf-f086698fe16f">
+<img width="420" alt="fb130503-54ad-44e2-8633-10eb6cd6e1d7" src="https://github.com/jazzsim/soda-flutter/assets/24294128/9aa19dcf-192b-4164-a2ef-223843a6c6c5">
+<img width="420" alt="d69a988f-8d4b-4702-b530-ec4ab70b2c9c" src="https://github.com/jazzsim/soda-flutter/assets/24294128/b647915b-1385-45e9-8b43-d4ec1a45dfba">
+<img width="420" alt="f1be35f3-b8e9-431f-bfeb-408f9b5bf55f" src="https://github.com/jazzsim/soda-flutter/assets/24294128/63a6746a-8a97-4a06-bc6a-7fe43e578770">
+
+| Feature ✨                            |       |
+| :------------------------------------ | :-----: |
+| Play video                            | ✅      |
+| Screenshot                            | ✅      |
+| Autoload Subtitles (Based on Filename)| ✅      |
+| Load Subtitles From Server            | ✅      |
+| Load External Subtitles               | ✅      |
+| Play folder as Playlist               | ✅      |
+| Thumbnail                             | ✅      |
