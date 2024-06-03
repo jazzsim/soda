@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/modals/page_content.dart';
+import 'package:soda/pages/desktop/home_page.d.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 class PDFViwer extends ConsumerStatefulWidget {
@@ -37,11 +38,6 @@ class _PDFViwerState extends ConsumerState<PDFViwer> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          Uri.decodeComponent(widget.file.filename),
-        ),
-      ),
       body: Stack(
         children: [
           Container(
@@ -56,9 +52,59 @@ class _PDFViwerState extends ConsumerState<PDFViwer> {
                   headers: ref.read(contentControllerProvider).authHeader(),
                   Uri.parse(ref.read(baseURLStateProvider) + widget.file.filename),
                 ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
+                if (controller.isReady)
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.black.withOpacity(0.5),
+                      ),
+                      child: Text(
+                        "Page ${controller.pageNumber} / ${controller.pages.length}",
+                        style: const TextStyle(color: Colors.white),
+                      ).px(15).py(5),
+                    ).pb(15),
+                  ),
+              ],
+            ).pt(ref.read(titleBarHeight).toDouble() + 25),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 60,
+              color: Colors.black,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: () async => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 28,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Tooltip(
+                    message: Uri.decodeComponent(widget.file.filename),
+                    textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                    child: SizedBox(
+                      width: 400,
+                      child: Text(
+                        Uri.decodeComponent(widget.file.filename),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Colors.white,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  Container(
                     decoration: const BoxDecoration(
                       borderRadius: BorderRadius.only(
                         bottomLeft: Radius.circular(12),
@@ -94,26 +140,12 @@ class _PDFViwerState extends ConsumerState<PDFViwer> {
                       ],
                     ).px(10),
                   ),
-                ),
-                if (controller.isReady)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                      child: Text(
-                        "Page ${controller.pageNumber} / ${controller.pages.length}",
-                        style: const TextStyle(color: Colors.white),
-                      ).px(15).py(5),
-                    ).pb(15),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
-      ),
+      ).pt(ref.read(titleBarHeight).toDouble()),
     );
   }
 }

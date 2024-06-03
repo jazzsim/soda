@@ -53,6 +53,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Soda',
       theme: ThemeData(
+        appBarTheme: const AppBarTheme(centerTitle: true),
         colorScheme: ColorScheme.fromSeed(seedColor: themePrimary),
       ),
       home: const HomePage(),
