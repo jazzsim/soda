@@ -55,7 +55,6 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     ref.read(pathStateProvider.notifier).state = serverUri.path;
 
     ref.read(contentControllerProvider).getPageContent().then((_) {
-      // showToast(context, ToastType.success, 'Connected');
       Navigator.of(context).pop();
     }).catchError((err, st) {
       LoadingScreen(context).hide();

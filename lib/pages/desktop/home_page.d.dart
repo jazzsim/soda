@@ -372,6 +372,8 @@ class ContentsTabView extends ConsumerStatefulWidget {
 
 class _ContentsTabViewState extends ConsumerState<ContentsTabView> with AutomaticKeepAliveClientMixin {
   static const double minItemWidth = 300;
+  int currentIndex = 0;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -396,10 +398,9 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
         itemBuilder: (BuildContext context, int index) {
           final file = ref.read(widget.contentStateProvider)[index];
           final media = file.media.toLowerCase();
-          final url = file.filename;
           switch (media) {
             case 'image':
-              return ImageThumbnail(file, url: url);
+              return ImageThumbnail(file, index: index,);
             case 'video':
               return VideoThumbnail(file);
             case 'document':

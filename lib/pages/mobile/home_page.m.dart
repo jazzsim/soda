@@ -37,11 +37,7 @@ class HomePageMobile extends ConsumerWidget {
         }),
         const Divider(),
         if (ref.watch(serverListStateProvider).isNotEmpty) ...[
-          ...ref
-              .watch(serverListStateProvider)
-              .asMap()
-              .entries
-              .map(
+          ...ref.watch(serverListStateProvider).asMap().entries.map(
                 (MapEntry<int, String> server) => ListTile(
                   leading: const Icon(Icons.dns),
                   onTap: () => selectServerFunc(ref, context, server.key),
@@ -55,8 +51,7 @@ class HomePageMobile extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ).px(5),
-              )
-              ,
+              ),
         ]
       ]),
       body: ref.watch(pageContentStateProvider).files.isEmpty && ref.watch(pageContentStateProvider).folders.isEmpty
@@ -269,10 +264,13 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
         itemBuilder: (BuildContext context, int index) {
           final file = ref.watch(widget.contentStateProvider)[index];
           final media = file.media.toLowerCase();
-          final url = file.filename;
+          // final url = file.filename;
           switch (media) {
             case 'image':
-              return ImageThumbnail(file, url: url);
+              return ImageThumbnail(
+                file,
+                index: index,
+              );
             case 'video':
               return VideoThumbnail(file);
             case 'document':
