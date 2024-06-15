@@ -39,7 +39,7 @@ class _HomePageDekstopState extends ConsumerState<HomePageDekstop> with SingleTi
               milliseconds: 80,
             ),
             curve: Curves.easeIn,
-            width: ref.watch(sidebarStateProvider) ? 300 : 0,
+            width: ref.watch(sidebarStateProvider) ? 350 : 0,
             child: Drawer(
               shape: const LinearBorder(),
               child: Visibility(
@@ -142,131 +142,223 @@ class PageContentSectionDesktop extends ConsumerStatefulWidget {
 }
 
 class _PageContentSectionDesktopState extends ConsumerState<PageContentSectionDesktop> {
+  final folderScrollController = ScrollController();
+  bool gridFolderView = PreferencesService().getGridFolder();
+
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    bool gridFolderView = PreferencesService().getGridFolder();
-    final folderScrollController = ScrollController();
 
-    return SingleChildScrollView(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(
-          Uri.decodeComponent(ref.watch(pathStateProvider)),
-          style: Theme.of(context).textTheme.titleLarge,
-        ).pltrb(10, 10, 0, 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Folders',
-              style: Theme.of(context).textTheme.titleMedium,
-            ).pa(10),
-            IconButton(
-              onPressed: () async {
-                updateFolderPref();
-                setState(() {});
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            Uri.decodeComponent(ref.watch(pathStateProvider)),
+            style: Theme.of(context).textTheme.titleLarge,
+          ).pltrb(10, 10, 0, 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Folders',
+                style: Theme.of(context).textTheme.titleMedium,
+              ).pa(10),
+              IconButton(
+                onPressed: () async {
+                  updateFolderPref();
+                  setState(() {});
+                },
+                icon: Icon(
+                  gridFolderView ? Icons.grid_on_rounded : Icons.list,
+                ).pr(8),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: screenSize.height,
+            child: VerticalSplitView(
+              top: SizedBox(
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeBottom: true,
+                  child: gridFolderView
+                      ? GridFolderDekstop(
+                          scrollController: folderScrollController,
+                        )
+                      : ListFolder(
+                          scrollController: folderScrollController,
+                        ),
+                ),
+              ),
+              bottom: ref.watch(pageContentStateProvider).files.isNotEmpty
+                  ? SizedBox(
+                      height: screenSize.height * 0.6,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Files',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ).pltrb(10, 20, 10, 10),
+                          Flexible(
+                            child: DefaultTabController(
+                              length: 4,
+                              child: Column(children: [
+                                TabBar(
+                                  tabs: <Widget>[
+                                    Tab(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.image),
+                                          Text(
+                                            ref.watch(imagesContentStateProvider).isEmpty ? '-' : '${ref.watch(imagesContentStateProvider).length}',
+                                          ).pl(5),
+                                        ],
+                                      ),
+                                    ),
+                                    Tab(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            Icons.play_circle,
+                                          ),
+                                          Text(
+                                            ref.watch(videosContentStateProvider).isEmpty ? '-' : '${ref.watch(videosContentStateProvider).length}',
+                                          ).pl(5),
+                                        ],
+                                      ),
+                                    ),
+                                    Tab(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.description),
+                                          Text(
+                                            ref.watch(documentsContentStateProvider).isEmpty ? '-' : '${ref.watch(documentsContentStateProvider).length}',
+                                          ).pl(5),
+                                        ],
+                                      ),
+                                    ),
+                                    Tab(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.quiz),
+                                          Text(
+                                            ref.watch(othersContentStateProvider).isEmpty ? '-' : '${ref.watch(othersContentStateProvider).length}',
+                                          ).pl(5),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Expanded(
+                                  child: TabBarView(children: [
+                                    ContentsTabView(imagesContentStateProvider),
+                                    ContentsTabView(videosContentStateProvider),
+                                    ContentsTabView(documentsContentStateProvider),
+                                    ContentsTabView(othersContentStateProvider),
+                                  ]),
+                                ),
+                              ]),
+                            ),
+                          )
+                        ],
+                      ),
+                    )
+                  : Container(),
+              ratio: 0.3,
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class VerticalSplitView extends StatefulWidget {
+  final Widget top;
+  final Widget bottom;
+  final double ratio;
+
+  const VerticalSplitView({super.key, required this.top, required this.bottom, this.ratio = 0.5})
+      : assert(ratio >= 0),
+        assert(ratio <= 1);
+
+  @override
+  State<VerticalSplitView> createState() => _VerticalSplitViewState();
+}
+
+class _VerticalSplitViewState extends State<VerticalSplitView> {
+  final _dividerHeight = 16.0;
+
+  late double _ratio;
+  double? _maxHeight;
+
+  get _height1 => _ratio * (_maxHeight ?? 200);
+
+  get _height2 => (1 - _ratio) * (_maxHeight ?? 410);
+
+  @override
+  void initState() {
+    super.initState();
+    _ratio = widget.ratio;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, BoxConstraints constraints) {
+      assert(_ratio <= 1);
+      assert(_ratio >= 0);
+      _maxHeight ??= constraints.maxHeight;
+      if (_maxHeight != constraints.maxHeight) {
+        _maxHeight = constraints.maxHeight - _dividerHeight;
+      }
+
+      return SizedBox(
+        height: constraints.maxHeight,
+        child: Column(
+          children: <Widget>[
+            SizedBox(
+              height: _height1 - 120,
+              child: widget.top,
+            ),
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              child: const SizedBox(
+                height: 20,
+                child: RotationTransition(
+                  turns: AlwaysStoppedAnimation(0),
+                  child: Icon(Icons.drag_handle),
+                ),
+              ),
+              onPanUpdate: (DragUpdateDetails details) {
+                setState(
+                  () {
+                    if (_ratio < 0.25) {
+                      _ratio = 0.25;
+                      return;
+                    } else if (_ratio > 0.65) {
+                      _ratio = 0.65;
+                      return;
+                    }
+                    _ratio += details.delta.dy / (_maxHeight ?? 0);
+                  },
+                );
               },
-              icon: Icon(
-                gridFolderView ? Icons.grid_on_rounded : Icons.list,
-              ).pr(8),
+            ),
+            SizedBox(
+              height: _height2,
+              child: widget.bottom,
             ),
           ],
         ),
-        SizedBox(
-          width: screenSize.width,
-          height: screenSize.height * 0.25,
-          child: MediaQuery.removePadding(
-            context: context,
-            removeBottom: true,
-            child: gridFolderView
-                ? GridFolderDekstop(
-                    scrollController: folderScrollController,
-                  )
-                : ListFolder(
-                    scrollController: folderScrollController,
-                  ),
-          ),
-        ),
-        if (ref.watch(pageContentStateProvider).files.isNotEmpty)
-          SizedBox(
-            height: screenSize.height * 0.6,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Files',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ).pltrb(10, 20, 10, 10),
-                Flexible(
-                  child: DefaultTabController(
-                    length: 4,
-                    child: Column(children: [
-                      TabBar(
-                        tabs: <Widget>[
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.image),
-                                Text(
-                                  ref.watch(imagesContentStateProvider).isEmpty ? '-' : '${ref.watch(imagesContentStateProvider).length}',
-                                ).pl(5),
-                              ],
-                            ),
-                          ),
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.play_circle,
-                                ),
-                                Text(
-                                  ref.watch(videosContentStateProvider).isEmpty ? '-' : '${ref.watch(videosContentStateProvider).length}',
-                                ).pl(5),
-                              ],
-                            ),
-                          ),
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.description),
-                                Text(
-                                  ref.watch(documentsContentStateProvider).isEmpty ? '-' : '${ref.watch(documentsContentStateProvider).length}',
-                                ).pl(5),
-                              ],
-                            ),
-                          ),
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.quiz),
-                                Text(
-                                  ref.watch(othersContentStateProvider).isEmpty ? '-' : '${ref.watch(othersContentStateProvider).length}',
-                                ).pl(5),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      Expanded(
-                        child: TabBarView(children: [
-                          ContentsTabView(imagesContentStateProvider),
-                          ContentsTabView(videosContentStateProvider),
-                          ContentsTabView(documentsContentStateProvider),
-                          ContentsTabView(othersContentStateProvider),
-                        ]),
-                      ),
-                    ]),
-                  ),
-                )
-              ],
-            ),
-          ),
-      ]),
-    );
+      );
+    });
   }
 }
 
@@ -289,30 +381,34 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
     final scrollController = ScrollController();
     int columnsCount = (MediaQuery.of(context).size.width / minItemWidth).floor();
 
-    return GridView.builder(
+    return SingleChildScrollView(
       controller: scrollController,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columnsCount,
-        childAspectRatio: 1.0,
-        crossAxisSpacing: 12.0,
-        mainAxisSpacing: 12.0,
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columnsCount,
+          childAspectRatio: 1.0,
+          crossAxisSpacing: 12.0,
+          mainAxisSpacing: 12.0,
+        ),
+        itemCount: ref.read(widget.contentStateProvider).length,
+        itemBuilder: (BuildContext context, int index) {
+          final file = ref.read(widget.contentStateProvider)[index];
+          final media = file.media.toLowerCase();
+          final url = file.filename;
+          switch (media) {
+            case 'image':
+              return ImageThumbnail(file, url: url);
+            case 'video':
+              return VideoThumbnail(file);
+            case 'document':
+              return DocumentThumbnail(file);
+            default:
+              return OthersThumbnail(file);
+          }
+        },
       ),
-      itemCount: ref.read(widget.contentStateProvider).length,
-      itemBuilder: (BuildContext context, int index) {
-        final file = ref.read(widget.contentStateProvider)[index];
-        final media = file.media.toLowerCase();
-        final url = file.filename;
-        switch (media) {
-          case 'image':
-            return ImageThumbnail(file, url: url);
-          case 'video':
-            return VideoThumbnail(file);
-          case 'document':
-            return DocumentThumbnail(file);
-          default:
-            return OthersThumbnail(file);
-        }
-      },
-    ).px(10).pt(8);
+    );
   }
 }
