@@ -66,8 +66,6 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
           index: record.$2,
         );
         await player.open(playlist);
-        // auto load based on matching filename
-        ref.read(contentControllerProvider).autoLoadSubs(player, widget.url);
       },
     );
   }
@@ -89,19 +87,28 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
             Expanded(
               child: SizedBox(
                 width: MediaQuery.of(context).size.width,
-                child: Video(
-                  wakelock: false,
-                  subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
-                  controller: controller,
-                  controls: (state) {
-                    return Stack(
-                      children: [
-                        BufferingWidget(player: player),
-                        VideoControlWidget(
-                          player: player,
-                          state: state,
-                        ),
-                      ],
+                child: StreamBuilder<Playlist>(
+                  stream: player.stream.playlist,
+                  builder: (context, snapshot) {
+                    if (snapshot.data?.index != null) {
+                      // auto load based on matching filename
+                      ref.read(contentControllerProvider).autoLoadSubs(player, snapshot.data!.index);
+                    }
+                    return Video(
+                      wakelock: false,
+                      subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
+                      controller: controller,
+                      controls: (state) {
+                        return Stack(
+                          children: [
+                            BufferingWidget(player: player),
+                            VideoControlWidget(
+                              player: player,
+                              state: state,
+                            ),
+                          ],
+                        );
+                      },
                     );
                   },
                 ),

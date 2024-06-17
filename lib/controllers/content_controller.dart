@@ -207,8 +207,9 @@ class ContentController {
     });
   }
 
-  void autoLoadSubs(Player player, String filename) async {
+  void autoLoadSubs(Player player, int fileIndex) async {
     List<String> subsExt = ['srt', 'ass', 'sub', 'vtt', 'ssa'];
+    String filename = ref.read(videosContentStateProvider)[fileIndex].filename;
 
     for (var otherFile in ref.read(othersContentStateProvider)) {
       for (var ext in subsExt) {
@@ -281,7 +282,7 @@ class ContentController {
     RegExp regExp = RegExp(r'([^\.]+)');
     String filename1 = regExp.firstMatch(string1)?.group(1) ?? string1;
     String filename2 = regExp.firstMatch(string2)?.group(1) ?? string2;
-    return filename1 == filename2;
+    return filename1.contains(filename2);
   }
 
   void clear() {
