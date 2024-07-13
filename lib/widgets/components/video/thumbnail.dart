@@ -1,45 +1,24 @@
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soda/controllers/content_controller.dart';
+import 'package:soda/controllers/provider.dart';
 import 'package:soda/modals/page_content.dart';
 import 'package:soda/widgets/components/video/main_video_player.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
-class VideoThumbnail extends ConsumerStatefulWidget {
+class VideoThumbnail extends StatelessWidget {
   final FileElement file;
   const VideoThumbnail(this.file, {super.key});
 
   @override
-  ConsumerState<VideoThumbnail> createState() => _VideoThumbnailState();
-}
-
-class _VideoThumbnailState extends ConsumerState<VideoThumbnail> {
-  String thumbnailUrl = "";
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(contentControllerProvider).vidThumbnail(widget.file.filename).then((value) {
-        if (mounted) {
-          setState(() {
-            thumbnailUrl = value;
-          });
-        }
-      });
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    String readableFile = Uri.decodeComponent(widget.file.filename);
+    String readableFile = Uri.decodeComponent(file.filename);
 
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => MainVideoPlayer(widget.file.filename),
+            builder: (context) => MainVideoPlayer(file.filename),
           ),
         );
       },
@@ -50,26 +29,36 @@ class _VideoThumbnailState extends ConsumerState<VideoThumbnail> {
               children: [
                 Align(
                   alignment: Alignment.center,
-                  child: thumbnailUrl == ""
-                      ? const Icon(
-                          Icons.play_circle_fill,
-                          color: Color.fromARGB(255, 160, 112, 184),
-                          size: 100,
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: ExtendedImage.network(
-                            thumbnailUrl,
-                            fit: BoxFit.cover,
-                            height: 200,
-                            cache: true,
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(
-                                12.0,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final AsyncValue<String> vidThumbnailUrl = ref.watch(vidThumbnailProvider(file.filename));
+
+                      return Center(
+                        child: switch (vidThumbnailUrl) {
+                          AsyncData(:final value) => ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: ExtendedImage.network(
+                                value,
+                                fit: BoxFit.cover,
+                                height: 200,
+                                cacheMaxAge: const Duration(days: 1),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(
+                                    12.0,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
+                          AsyncError() => const Text('Oops, something unexpected happened'),
+                          _ => const Icon(
+                              Icons.play_circle_fill,
+                              color: Color.fromARGB(255, 160, 112, 184),
+                              size: 100,
+                            ),
+                        },
+                      );
+                    },
+                  ),
                 ),
                 Container(
                   foregroundDecoration: BoxDecoration(
