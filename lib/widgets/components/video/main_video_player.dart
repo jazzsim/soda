@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:extended_text/extended_text.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -179,7 +180,7 @@ class _EndDrawerWidgetState extends ConsumerState<EndDrawerWidget> {
       length: 2,
       child: Container(
         width: 300,
-        color: const Color.fromARGB(232, 237, 237, 237),
+        color: CupertinoColors.systemGrey6.withOpacity(0.6),
         child: Column(
           children: [
             TabBar(
@@ -266,6 +267,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
               onDoubleTap: () async {
                 await widget.player.jump(index).then((_) {
                   ref.read(playingVideoProvider.notifier).update((state) => index);
+                  setState(() {});
                 });
               },
               child: Listener(
@@ -692,7 +694,7 @@ OverlayEntry showLoadingOverlay(BuildContext context) {
   );
 }
 
-class ProgressBar extends StatefulWidget {
+class ProgressBar extends ConsumerStatefulWidget {
   const ProgressBar({
     super.key,
     required this.player,
@@ -701,10 +703,10 @@ class ProgressBar extends StatefulWidget {
   final Player player;
 
   @override
-  State<ProgressBar> createState() => _ProgressBarState();
+  ConsumerState<ProgressBar> createState() => _ProgressBarState();
 }
 
-class _ProgressBarState extends State<ProgressBar> {
+class _ProgressBarState extends ConsumerState<ProgressBar> {
   late double position, timeStampsDouble;
   late Offset cursorPosition;
   Duration? timeStamps;
@@ -722,6 +724,18 @@ class _ProgressBarState extends State<ProgressBar> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return GestureDetector(
+                  onPanUpdate: (details) {
+                    cursorPosition = details.localPosition;
+                    position = details.localPosition.dx / constraints.maxWidth;
+                    timeStampsDouble = position * widget.player.state.duration.inSeconds;
+                    timeStamps = Duration(seconds: timeStampsDouble.toInt());
+                    setState(() {});
+                  },
+                  onPanEnd: (_) {
+                    if (onHover && timeStamps != null) {
+                      widget.player.seek(timeStamps!);
+                    }
+                  },
                   onTap: () {
                     if (timeStamps != null) {
                       widget.player.seek(timeStamps!);
