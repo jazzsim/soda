@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-const String baseUrl = 'http://localhost:8080/';
+const String baseUrl = 'http://localhost:8080/api/';
 
 class BaseClient {
   var client = http.Client();

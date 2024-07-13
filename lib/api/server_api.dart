@@ -14,7 +14,7 @@ class ServerApi {
   }
 
   Future<ThumbnailImage> getThumbnail(String url, String filename) async {
-    final res = await BaseClient().get('thumbnail', query: {'url': url, 'filename': filename});
+    final res = await BaseClient().post('thumbnail', {'url': url, 'filename': filename});
     if (res != null) {
       return ThumbnailImage.fromJson(res);
     }
