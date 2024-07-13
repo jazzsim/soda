@@ -269,7 +269,7 @@ class SubtitleWidget extends ConsumerWidget {
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: ref.watch(subtitleScaleStateProvider) * 100,
+            fontSize: ref.watch(subtitleScaleStateProvider) * 100 * MediaQuery.sizeOf(context).width / 1920,
             foreground: Paint()
               ..style = PaintingStyle.stroke
               ..strokeWidth = 8
@@ -279,7 +279,7 @@ class SubtitleWidget extends ConsumerWidget {
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: ref.watch(subtitleScaleStateProvider) * 100,
+            fontSize: ref.watch(subtitleScaleStateProvider) * 100 * MediaQuery.sizeOf(context).width / 1920,
             color: Colors.yellow,
           ),
         ),
