@@ -56,7 +56,7 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
       cursorInWindow = null;
     }
 
-    setState(() {});
+    // setState(() {});
   }
 
   @override
@@ -183,9 +183,12 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
                   duration: const Duration(
                     milliseconds: 180,
                   ),
-                  child: _ControlsOverlay(
-                    videoPlayerSize: widget.player.state.width?.toDouble() ?? 0,
-                    player: widget.player,
+                  child: MouseRegion(
+                    onHover: (event) => _getCursor(callTimer: false),
+                    child: _ControlsOverlay(
+                      videoPlayerSize: widget.player.state.width?.toDouble() ?? 0,
+                      player: widget.player,
+                    ),
                   ),
                 ).pb(20),
               ),
@@ -372,7 +375,7 @@ class _ControlsOverlay extends ConsumerWidget {
                                   builder: (context) => EndDrawerWidget(player: player),
                                   onClose: () => showControls(ref, true),
                                   config: const DrawerConfig(
-                                    widthPercentage: 0.25,
+                                    widthPercentage: 0.22,
                                     maxDragExtent: 120,
                                     closeOnClickOutside: true,
                                     closeOnEscapeKey: true,
@@ -412,7 +415,7 @@ class _ControlsOverlay extends ConsumerWidget {
                                     child: Center(
                                       child: Text(
                                         ref.watch(alterVideoDurationStateProvider)
-                                            ? "- ${durationToStringWithoutMilliseconds(player.state.duration - player.state.position)}"
+                                            ? "-${durationToStringWithoutMilliseconds(player.state.duration - player.state.position)}"
                                             : durationToStringWithoutMilliseconds(player.state.duration),
                                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                               fontWeight: FontWeight.w400,

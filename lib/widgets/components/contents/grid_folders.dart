@@ -55,7 +55,7 @@ class GridFolder extends ConsumerWidget {
 class GridFolderDekstop extends ConsumerWidget {
   final ScrollController scrollController;
   const GridFolderDekstop({required this.scrollController, super.key});
-  static const double minItemWidth = 370.0;
+  static const double minItemWidth = 470.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -168,6 +168,7 @@ class _PageContentSectionDesktopState extends ConsumerState<PageContentSectionDe
               IconButton(
                 onPressed: () async {
                   updateFolderPref();
+                  gridFolderView = PreferencesService().getGridFolder();
                   setState(() {});
                 },
                 icon: Icon(
@@ -400,7 +401,10 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
           final media = file.media.toLowerCase();
           switch (media) {
             case 'image':
-              return ImageThumbnail(file, index: index,);
+              return ImageThumbnail(
+                file,
+                index: index,
+              );
             case 'video':
               return VideoThumbnail(file);
             case 'document':

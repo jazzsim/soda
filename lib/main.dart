@@ -16,15 +16,6 @@ void main() async {
   // Must add this line.
   await windowManager.ensureInitialized();
 
-  WindowOptions windowOptions = const WindowOptions(
-    center: true,
-    size: Size(1400, 800),
-  );
-
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-  });
-
   await PreferencesService.initialize();
   MediaKit.ensureInitialized();
 

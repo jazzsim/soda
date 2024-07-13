@@ -46,7 +46,7 @@ class _ImageViewState extends ConsumerState<ImageView> {
               Stack(
                 children: [
                   SizedBox(
-                    height: MediaQuery.sizeOf(context).height - 60,
+                    height: MediaQuery.sizeOf(context).height * 0.9,
                     child: PageView(
                       controller: pageController,
                       onPageChanged: (value) {
@@ -85,13 +85,13 @@ class _ImageViewState extends ConsumerState<ImageView> {
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: Container(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withOpacity(0.2),
                   height: MediaQuery.sizeOf(context).height,
                   width: 150,
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
+                      color: currentIndex == 0 ? Colors.grey : Colors.white,
                       size: 28,
                     ),
                   ),
@@ -115,13 +115,13 @@ class _ImageViewState extends ConsumerState<ImageView> {
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: Container(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withOpacity(0.2),
                   height: MediaQuery.sizeOf(context).height,
                   width: 150,
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.arrow_forward_ios_rounded,
-                      color: Colors.white,
+                      color: currentIndex == ref.read(imagesContentStateProvider).length ? Colors.grey : Colors.white,
                       size: 28,
                     ),
                   ),
