@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/pages/mobile/add_server.m.dart';
-import 'package:soda/providers/preferences_service.dart';
+import 'package:soda/services/device_size.dart';
+import 'package:soda/services/preferences_service.dart';
 import 'package:soda/widgets/components/contents/grid_folders.dart';
 import 'package:soda/widgets/components/documents/thumbnail.dart';
 import 'package:soda/widgets/extensions/padding.dart';
@@ -147,7 +148,7 @@ class _PageContentSectionDesktopState extends ConsumerState<PageContentSectionDe
 
   @override
   Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.of(context).size;
+    final Size screenSize = DeviceSizeService.device.size;
 
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -382,7 +383,7 @@ class _ContentsTabViewState extends ConsumerState<ContentsTabView> with Automati
   Widget build(BuildContext context) {
     super.build(context);
     final scrollController = ScrollController();
-    int columnsCount = (MediaQuery.of(context).size.width / minItemWidth).floor();
+    int columnsCount = (DeviceSizeService.device.width / minItemWidth).floor();
 
     return SingleChildScrollView(
       controller: scrollController,

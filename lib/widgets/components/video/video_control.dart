@@ -15,6 +15,7 @@ import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/main.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
 import 'package:soda/pages/home_page.dart';
+import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/components/video/main_video_player.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:window_manager/window_manager.dart';
@@ -50,7 +51,7 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
       final result = await MyApp.platform.invokeMethod<bool>('cursorInsideWindow');
       cursorInWindow = result;
       if (cursorInWindow ?? false) {
-        showControls(ref, callTimer);
+        showControls(ref, callTimer: callTimer);
       }
     } on PlatformException {
       cursorInWindow = null;
@@ -122,8 +123,8 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
                     onSecondaryTapDown: (event) => widget.player.state.playing ? widget.player.pause() : widget.player.play(),
                     child: Container(
                       color: Colors.transparent,
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height,
+                      width: DeviceSizeService.device.size.width,
+                      height: DeviceSizeService.device.size.height,
                     ),
                   ),
                 ),
@@ -161,7 +162,7 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
                 ),
               ),
               Positioned(
-                bottom: (MediaQuery.sizeOf(context).height - 100) * (ref.watch(subtitlePositionStateProvider) ?? 0),
+                bottom: (DeviceSizeService.device.height - 100) * (ref.watch(subtitlePositionStateProvider) ?? 0),
                 left: 0,
                 right: 0,
                 child: StreamBuilder<List<String>>(
@@ -269,7 +270,7 @@ class SubtitleWidget extends ConsumerWidget {
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: ref.watch(subtitleScaleStateProvider) * 100 * MediaQuery.sizeOf(context).width / 1920,
+            fontSize: ref.watch(subtitleScaleStateProvider) * 100 * DeviceSizeService.device.width / 1920,
             foreground: Paint()
               ..style = PaintingStyle.stroke
               ..strokeWidth = 8
@@ -279,7 +280,7 @@ class SubtitleWidget extends ConsumerWidget {
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: ref.watch(subtitleScaleStateProvider) * 100 * MediaQuery.sizeOf(context).width / 1920,
+            fontSize: ref.watch(subtitleScaleStateProvider) * 100 * DeviceSizeService.device.width / 1920,
             color: Colors.yellow,
           ),
         ),
@@ -296,7 +297,7 @@ class _ControlsOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    double controlsOverlaySize = MediaQuery.sizeOf(context).width / 6;
+    double controlsOverlaySize = DeviceSizeService.device.width / 6;
 
     return StreamBuilder<Duration>(
       stream: player.stream.position,
@@ -373,7 +374,7 @@ class _ControlsOverlay extends ConsumerWidget {
                                 showDrawer(
                                   context,
                                   builder: (context) => EndDrawerWidget(player: player),
-                                  onClose: () => showControls(ref, true),
+                                  onClose: () => showControls(ref, callTimer: true),
                                   config: const DrawerConfig(
                                     widthPercentage: 0.22,
                                     maxDragExtent: 120,
@@ -503,7 +504,7 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
   };
 }
 
-void showControls(WidgetRef ref, bool callTimer) {
+void showControls(WidgetRef ref, {bool callTimer = false}) {
   ref.read(showVideoControlProvider.notifier).update((state) => true);
   ref.watch(timerProvider)?.cancel();
 

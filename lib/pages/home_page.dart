@@ -1,9 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../controllers/content_controller.dart';
-import '../providers/preferences_service.dart';
+import '../services/preferences_service.dart';
 import '../widgets/components/dialogs/loading_dialog.dart';
 import '../widgets/components/dialogs/toast_overlay.dart';
 import 'desktop/home_page.d.dart';
@@ -26,11 +28,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      int height = await windowManager.getTitleBarHeight();
-      ref.read(titleBarHeight.notifier).update((state) => height);
-      windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-    });
+    // skip if not desktop
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        int height = await windowManager.getTitleBarHeight();
+        ref.read(titleBarHeight.notifier).update((state) => height);
+        windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+      });
+    }
   }
 
   @override
@@ -47,7 +53,7 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
   ref.read(selectedIndexStateProvvider.notifier).update((state) => index);
   String url = ref.watch(serverListStateProvider)[index];
 
-  if (ref.read(httpServerStateProvider).url != url) {
+  if (ref.read(httpServerStateProvider).url + ref.read(pathStateProvider) != url) {
     LoadingScreen(context).show();
     Uri serverUri = ref.read(contentControllerProvider).selectServer(url);
     ref.invalidate(pageContentStateProvider);
@@ -55,9 +61,11 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     ref.read(pathStateProvider.notifier).state = serverUri.path;
 
     ref.read(contentControllerProvider).getPageContent().then((_) {
+      LoadingScreen(context).hide();
       Navigator.of(context).pop();
     }).catchError((err, st) {
       LoadingScreen(context).hide();
+      Navigator.of(context).pop();
       showToast(context, ToastType.error, err);
     });
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
+import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 class ImageView extends ConsumerStatefulWidget {
@@ -46,7 +47,7 @@ class _ImageViewState extends ConsumerState<ImageView> {
               Stack(
                 children: [
                   SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.9,
+                    height: DeviceSizeService.device.height * 0.9,
                     child: PageView(
                       controller: pageController,
                       onPageChanged: (value) {
@@ -64,7 +65,7 @@ class _ImageViewState extends ConsumerState<ImageView> {
                         }),
                       ],
                     ),
-                  ).pt(ref.read(titleBarHeight).toDouble()),
+                  ).pt(ref.read(titleBarHeight)),
                 ],
               ),
             ],
@@ -86,7 +87,7 @@ class _ImageViewState extends ConsumerState<ImageView> {
                 cursor: SystemMouseCursors.click,
                 child: Container(
                   color: Colors.black.withOpacity(0.2),
-                  height: MediaQuery.sizeOf(context).height,
+                  height: DeviceSizeService.device.height,
                   width: 150,
                   child: Center(
                     child: Icon(
@@ -116,7 +117,7 @@ class _ImageViewState extends ConsumerState<ImageView> {
                 cursor: SystemMouseCursors.click,
                 child: Container(
                   color: Colors.black.withOpacity(0.2),
-                  height: MediaQuery.sizeOf(context).height,
+                  height: DeviceSizeService.device.height,
                   width: 150,
                   child: Center(
                     child: Icon(

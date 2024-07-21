@@ -11,7 +11,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:soda/api/server_api.dart';
 import 'package:soda/modals/http_server.dart';
 import 'package:soda/pages/home_page.dart';
-import 'package:soda/providers/preferences_service.dart';
+import 'package:soda/services/preferences_service.dart';
 import 'package:soda/widgets/components/video/main_video_player.dart';
 import 'package:soda/widgets/components/video/video_control.dart';
 

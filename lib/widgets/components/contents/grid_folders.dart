@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
+import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../../controllers/content_controller.dart';
@@ -59,7 +60,7 @@ class GridFolderDekstop extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    int columnsCount = (MediaQuery.of(context).size.width / minItemWidth).floor();
+    int columnsCount = (DeviceSizeService.device.width / minItemWidth).floor();
 
     return GridView.builder(
       controller: scrollController,

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:extended_text/extended_text.dart';
 import 'package:file_picker/file_picker.dart';
@@ -14,11 +15,11 @@ import 'package:soda/widgets/components/dialogs/loading_view.dart';
 import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
 import 'package:soda/widgets/components/primary_button.dart';
 import 'package:soda/widgets/components/secondary_button.dart';
-import 'package:soda/widgets/components/video/video_control.dart';
+import 'package:soda/widgets/components/video/video_control.m.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:soda/widgets/extensions/row.dart';
 
-final offSetStateProvider = StateProvider<double>((ref) => 0);
+final onHoverDurationProvider = StateProvider<String?>((ref) => null);
 
 final playlistProvider = StateProvider<List<Media>>((ref) => []);
 
@@ -28,20 +29,15 @@ final alterVideoDurationStateProvider = StateProvider<bool>((ref) => false);
 
 final browsePathStateProvider = StateProvider.autoDispose<String>((ref) => ref.read(pathStateProvider));
 
-final subtitlePositionStateProvider = StateProvider.autoDispose<double>((ref) => 0);
-
-final subtitleScaleStateProvider = StateProvider.autoDispose<double>((ref) => 0.34);
-
-class MainVideoPlayer extends ConsumerStatefulWidget {
+class MobilleVideoPlayer extends ConsumerStatefulWidget {
   final String url;
-  const MainVideoPlayer(this.url, {super.key});
+  const MobilleVideoPlayer(this.url, {super.key});
 
   @override
-  ConsumerState<MainVideoPlayer> createState() => _MainVideoPlayerState();
+  ConsumerState<MobilleVideoPlayer> createState() => _MobilleVideoPlayerState();
 }
 
-class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
-  late final videoPlayerHeight = (DeviceSizeService.device.size.height) / 2, videoPlayerWidth = (DeviceSizeService.device.size.width) / 2;
+class _MobilleVideoPlayerState extends ConsumerState<MobilleVideoPlayer> {
   final player = Player();
   late final controller = VideoController(player);
 
@@ -97,14 +93,28 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                       ref.read(contentControllerProvider).autoLoadSubs(player, snapshot.data!.index);
                     }
                     return Video(
-                      wakelock: false,
                       subtitleViewConfiguration: const SubtitleViewConfiguration(visible: false),
                       controller: controller,
                       controls: (state) {
                         return Stack(
                           children: [
+                            ref.watch(onHoverDurationProvider) == null
+                                ? const SizedBox()
+                                : BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
+                                    child: Center(
+                                      child: Text(
+                                        ref.read(onHoverDurationProvider) ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                             BufferingWidget(player: player),
-                            VideoControlWidget(
+                            MobileVideoControlWidget(
                               player: player,
                               state: state,
                             ),
@@ -161,8 +171,8 @@ class BufferingWidget extends StatelessWidget {
   }
 }
 
-class EndDrawerWidget extends ConsumerStatefulWidget {
-  const EndDrawerWidget({
+class MobileEndDrawerWidget extends ConsumerStatefulWidget {
+  const MobileEndDrawerWidget({
     super.key,
     required this.player,
   });
@@ -170,49 +180,51 @@ class EndDrawerWidget extends ConsumerStatefulWidget {
   final Player player;
 
   @override
-  ConsumerState<EndDrawerWidget> createState() => _EndDrawerWidgetState();
+  ConsumerState<MobileEndDrawerWidget> createState() => _MobileEndDrawerWidgetState();
 }
 
-class _EndDrawerWidgetState extends ConsumerState<EndDrawerWidget> {
+class _MobileEndDrawerWidgetState extends ConsumerState<MobileEndDrawerWidget> {
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      initialIndex: 0,
-      length: 2,
-      child: Container(
-        width: 300,
-        color: CupertinoColors.systemGrey6.withOpacity(0.6),
-        child: Column(
-          children: [
-            TabBar(
-              tabs: <Widget>[
-                Tab(
-                  child: const Text(
-                    "Playlist",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ).pt(10),
-                ),
-                Tab(
-                  child: const Text(
-                    "Settings",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ).pt(10),
-                ),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: <Widget>[
-                  PlaylistTab(widget.player),
-                  SettingTab(widget.player),
+    return SafeArea(
+      child: DefaultTabController(
+        initialIndex: 0,
+        length: 2,
+        child: Container(
+          width: 300,
+          color: CupertinoColors.systemGrey6.withOpacity(0.6),
+          child: Column(
+            children: [
+              TabBar(
+                tabs: <Widget>[
+                  Tab(
+                    child: const Text(
+                      "Playlist",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ).pt(10),
+                  ),
+                  Tab(
+                    child: const Text(
+                      "Settings",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ).pt(10),
+                  ),
                 ],
               ),
-            ),
-          ],
+              Expanded(
+                child: TabBarView(
+                  children: <Widget>[
+                    PlaylistTab(widget.player),
+                    SettingTab(widget.player),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -228,38 +240,18 @@ class PlaylistTab extends ConsumerStatefulWidget {
 }
 
 class _PlaylistTabState extends ConsumerState<PlaylistTab> {
-  late ScrollController scrollController;
   int? selectedIndex;
 
   @override
-  void initState() {
-    super.initState();
-    scrollController = ScrollController(
-      initialScrollOffset: ref.read(offSetStateProvider),
-      keepScrollOffset: false,
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      scrollController.position.isScrollingNotifier.addListener(() {
-        if (!scrollController.position.isScrollingNotifier.value) {
-          ref.read(offSetStateProvider.notifier).update((state) => scrollController.offset);
-        }
-      });
-    });
-  }
-
-  @override
   void dispose() {
-    scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scrollbar(
-      controller: scrollController,
       thumbVisibility: true,
       child: ListView.builder(
-          controller: scrollController,
           itemCount: ref.read(playlistProvider).length,
           itemBuilder: (BuildContext context, int index) {
             Media media = ref.read(playlistProvider)[index];
@@ -476,26 +468,6 @@ class _SettingTabState extends ConsumerState<SettingTab> {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ).btnRow(15),
-        Text(
-          "Scale:",
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ).pltrb(15, 20, 0, 0),
-        Slider(
-          value: ref.watch(subtitleScaleStateProvider),
-          onChanged: (value) {
-            ref.read(subtitleScaleStateProvider.notifier).update((state) => value);
-          },
-        ),
-        Text(
-          "Position:",
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ).pltrb(15, 20, 0, 0),
-        Slider(
-          value: ref.watch(subtitlePositionStateProvider),
-          onChanged: (value) {
-            ref.read(subtitlePositionStateProvider.notifier).update((state) => value);
-          },
-        ),
       ],
     );
   }
@@ -695,109 +667,6 @@ OverlayEntry showLoadingOverlay(BuildContext context) {
   );
 }
 
-class ProgressBar extends ConsumerStatefulWidget {
-  const ProgressBar({
-    super.key,
-    required this.player,
-  });
-
-  final Player player;
-
-  @override
-  ConsumerState<ProgressBar> createState() => _ProgressBarState();
-}
-
-class _ProgressBarState extends ConsumerState<ProgressBar> {
-  late double position, timeStampsDouble;
-  late Offset cursorPosition;
-  Duration? timeStamps;
-  bool onHover = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final playbackPosition = widget.player.state.position.inSeconds / widget.player.state.duration.inSeconds;
-
-    return SizedBox(
-      height: 34,
-      child: Stack(
-        children: [
-          Align(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return GestureDetector(
-                  onPanUpdate: (details) {
-                    cursorPosition = details.localPosition;
-                    position = details.localPosition.dx / constraints.maxWidth;
-                    timeStampsDouble = position * widget.player.state.duration.inSeconds;
-                    timeStamps = Duration(seconds: timeStampsDouble.toInt());
-                    setState(() {});
-                  },
-                  onPanEnd: (_) {
-                    if (onHover && timeStamps != null) {
-                      widget.player.seek(timeStamps!);
-                    }
-                  },
-                  onTap: () {
-                    if (timeStamps != null) {
-                      widget.player.seek(timeStamps!);
-                    }
-                  },
-                  child: MouseRegion(
-                    onHover: (event) {
-                      onHover = true;
-                      position = event.localPosition.dx / constraints.maxWidth;
-                      timeStampsDouble = position * widget.player.state.duration.inSeconds;
-                      timeStamps = Duration(seconds: timeStampsDouble.toInt());
-                      cursorPosition = event.localPosition;
-                      setState(() {});
-                    },
-                    onExit: (event) {
-                      onHover = false;
-                      setState(() {});
-                    },
-                    child: Stack(
-                      children: [
-                        LinearProgressIndicator(
-                          color: const Color.fromARGB(121, 2, 2, 2),
-                          backgroundColor: const Color.fromARGB(123, 129, 127, 127),
-                          value: widget.player.state.position.inSeconds != 0 ? playbackPosition : 0,
-                          borderRadius: BorderRadius.circular(12),
-                        ).py(5),
-                        Positioned(
-                          left: widget.player.state.position.inSeconds != 0 ? (playbackPosition * constraints.maxWidth) - 2 : 0,
-                          child: Container(
-                            height: 14,
-                            width: 3.8,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(
-                                width: 0.07,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ).pltrb(60, 0, 60, 0),
-          ),
-          if (onHover)
-            Positioned(
-              left: cursorPosition.dx + 40,
-              top: -6,
-              child: Text(durationToStringWithoutMilliseconds(timeStamps ?? widget.player.state.position),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400, fontSize: 9))
-                  .pa(5),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 String durationToStringWithoutMilliseconds(Duration duration) {
   String twoDigits(int n) => n.toString().padLeft(2, '0');
 
@@ -809,42 +678,6 @@ String durationToStringWithoutMilliseconds(Duration duration) {
     return '$minutes:$seconds';
   }
   return '$hours:$minutes:$seconds';
-}
-
-class VolumeSlider extends ConsumerStatefulWidget {
-  final Player player;
-
-  const VolumeSlider({required this.player, super.key});
-
-  @override
-  ConsumerState<VolumeSlider> createState() => _VolumeSliderState();
-}
-
-class _VolumeSliderState extends ConsumerState<VolumeSlider> {
-  @override
-  Widget build(BuildContext context) {
-    return SliderTheme(
-      data: SliderThemeData(
-        overlayShape: SliderComponentShape.noOverlay,
-        thumbShape: SliderComponentShape.noThumb,
-      ),
-      child: SizedBox(
-        height: 20,
-        child: Slider(
-          max: 100,
-          value: ref.watch(volumeStateProvider) ?? widget.player.state.volume,
-          onChanged: (value) => setState(() {
-            widget.player.setVolume(value);
-            ref.read(volumeStateProvider.notifier).update((state) => value);
-            ref.read(showVolumeProvider.notifier).update((state) => true);
-            setState(() {});
-          }),
-          activeColor: const Color.fromARGB(255, 96, 154, 254),
-          inactiveColor: const Color.fromARGB(248, 212, 211, 211),
-        ),
-      ),
-    );
-  }
 }
 
 (List<Media>, int) getPlaylist(WidgetRef ref, String url) {

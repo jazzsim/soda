@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soda/providers/preferences_service.dart';
+import 'package:soda/services/device_size.dart';
+import 'package:soda/services/preferences_service.dart';
 import 'package:soda/widgets/components/contents/grid_folders.dart';
 import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
 import 'package:soda/widgets/extensions/padding.dart';
@@ -22,19 +23,22 @@ class HomePageMobile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      appBar: AppBar(),
       drawer: NavigationDrawer(selectedIndex: ref.watch(selectedIndexStateProvvider), children: [
-        Consumer(builder: (context, ref, child) {
-          return ListTile(
-            title: const Text(
-              'New Server',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+        Consumer(
+          builder: (context, ref, child) {
+            return ListTile(
+              title: const Text(
+                'New Server',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            trailing: const Icon(Icons.add_circle_rounded),
-            onTap: () => addServer(ref, context, MediaQuery.of(context).size.width),
-          );
-        }),
+              trailing: const Icon(Icons.add_circle_rounded),
+              onTap: () => addServer(ref, context, DeviceSizeService.device.width),
+            );
+          },
+        ),
         const Divider(),
         if (ref.watch(serverListStateProvider).isNotEmpty) ...[
           ...ref.watch(serverListStateProvider).asMap().entries.map(
@@ -76,126 +80,135 @@ class PageContentSection extends ConsumerStatefulWidget {
 class _PageContentSectionState extends ConsumerState<PageContentSection> {
   @override
   Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.of(context).size;
+    final Size screenSize = DeviceSizeService.device.size;
     bool gridFolderView = PreferencesService().getGridFolder();
     final folderScrollController = ScrollController();
 
-    return Column(children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return SafeArea(
+      child: Column(
         children: [
-          Text(
-            'Folders',
-            style: Theme.of(context).textTheme.titleMedium,
-          ).pa(10),
-          IconButton(
-            onPressed: () async {
-              updateFolderPref();
-              setState(() {});
-            },
-            icon: Icon(
-              gridFolderView ? Icons.grid_on_rounded : Icons.list,
-            ),
-          ),
-        ],
-      ),
-      SizedBox(
-        height: screenSize.height * 0.2,
-        child: MediaQuery.removePadding(
-          context: context,
-          removeBottom: true,
-          child: Scrollbar(
-            controller: folderScrollController,
-            thumbVisibility: true,
-            child: gridFolderView
-                ? GridFolder(
-                    scrollController: folderScrollController,
-                  )
-                : ListFolder(
-                    scrollController: folderScrollController,
-                  ),
-          ),
-        ),
-      ),
-      if (ref.watch(pageContentStateProvider).files.isNotEmpty)
-        SizedBox(
-          height: screenSize.height * 0.6,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Files',
+                'Folders',
                 style: Theme.of(context).textTheme.titleMedium,
-              ).pltrb(10, 20, 10, 10),
-              Flexible(
-                child: DefaultTabController(
-                  length: 4,
-                  child: Column(children: [
-                    TabBar(
-                      tabs: <Widget>[
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.image),
-                              Text(
-                                ref.watch(imagesContentStateProvider).isEmpty ? '-' : '${ref.watch(imagesContentStateProvider).length}',
-                              ).pl(5),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.play_circle,
-                              ),
-                              Text(
-                                ref.watch(videosContentStateProvider).isEmpty ? '-' : '${ref.watch(videosContentStateProvider).length}',
-                              ).pl(5),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.description),
-                              Text(
-                                ref.watch(documentsContentStateProvider).isEmpty ? '-' : '${ref.watch(documentsContentStateProvider).length}',
-                              ).pl(5),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.quiz),
-                              Text(
-                                ref.watch(othersContentStateProvider).isEmpty ? '-' : '${ref.watch(othersContentStateProvider).length}',
-                              ).pl(5),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    Expanded(
-                      child: TabBarView(children: [
-                        ContentsTabView(imagesContentStateProvider),
-                        ContentsTabView(videosContentStateProvider),
-                        ContentsTabView(documentsContentStateProvider),
-                        ContentsTabView(othersContentStateProvider),
-                      ]),
-                    ),
-                  ]),
+              ).pa(10),
+              IconButton(
+                onPressed: () async {
+                  updateFolderPref();
+                  setState(() {});
+                },
+                icon: Icon(
+                  gridFolderView ? Icons.grid_on_rounded : Icons.list,
                 ),
-              )
+              ),
             ],
           ),
-        ),
-    ]);
+          SizedBox(
+            height: screenSize.height * 0.2,
+            child: MediaQuery.removePadding(
+              context: context,
+              removeBottom: true,
+              child: Scrollbar(
+                controller: folderScrollController,
+                thumbVisibility: true,
+                child: gridFolderView
+                    ? GridFolder(
+                        scrollController: folderScrollController,
+                      )
+                    : ListFolder(
+                        scrollController: folderScrollController,
+                      ),
+              ),
+            ),
+          ),
+          if (ref.watch(pageContentStateProvider).files.isNotEmpty)
+            SizedBox(
+              height: screenSize.height * 0.6 - 11,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Files',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ).pltrb(10, 20, 10, 10),
+                  Flexible(
+                    child: DefaultTabController(
+                      length: 4,
+                      child: Column(
+                        children: [
+                          TabBar(
+                            tabs: <Widget>[
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.image),
+                                    Text(
+                                      ref.watch(imagesContentStateProvider).isEmpty ? '-' : '${ref.watch(imagesContentStateProvider).length}',
+                                    ).pl(5),
+                                  ],
+                                ),
+                              ),
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.play_circle,
+                                    ),
+                                    Text(
+                                      ref.watch(videosContentStateProvider).isEmpty ? '-' : '${ref.watch(videosContentStateProvider).length}',
+                                    ).pl(5),
+                                  ],
+                                ),
+                              ),
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.description),
+                                    Text(
+                                      ref.watch(documentsContentStateProvider).isEmpty ? '-' : '${ref.watch(documentsContentStateProvider).length}',
+                                    ).pl(5),
+                                  ],
+                                ),
+                              ),
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.quiz),
+                                    Text(
+                                      ref.watch(othersContentStateProvider).isEmpty ? '-' : '${ref.watch(othersContentStateProvider).length}',
+                                    ).pl(5),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Expanded(
+                            child: TabBarView(
+                              clipBehavior: Clip.antiAlias,
+                              children: [
+                                ContentsTabView(imagesContentStateProvider),
+                                ContentsTabView(videosContentStateProvider),
+                                ContentsTabView(documentsContentStateProvider),
+                                ContentsTabView(othersContentStateProvider),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

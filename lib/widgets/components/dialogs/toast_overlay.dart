@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
-import 'loading_dialog.dart';
-
 enum ToastType { success, error }
 
 void showToast(BuildContext context, ToastType type, String message, {bool? extent}) {

@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soda/controllers/provider.dart';
 import 'package:soda/modals/page_content.dart';
 import 'package:soda/widgets/components/video/main_video_player.dart';
+import 'package:soda/widgets/components/video/video_player.m.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 class VideoThumbnail extends StatelessWidget {
@@ -17,9 +20,12 @@ class VideoThumbnail extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => MainVideoPlayer(file.filename),
-          ),
+          MaterialPageRoute(builder: (context) {
+            if (Platform.isAndroid || Platform.isIOS) {
+              return MobilleVideoPlayer(file.filename);
+            }
+            return MainVideoPlayer(file.filename);
+          }),
         );
       },
       child: Column(

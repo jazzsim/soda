@@ -4,17 +4,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:soda/constants/colours.dart';
 import 'package:soda/pages/home_page.dart';
+import 'package:soda/services/device_size.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'providers/preferences_service.dart';
+import 'services/preferences_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Must add this line.
-  await windowManager.ensureInitialized();
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    // Must add this line.
+    await windowManager.ensureInitialized();
+  }
 
   await PreferencesService.initialize();
   MediaKit.ensureInitialized();
@@ -39,13 +41,15 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  build(BuildContext context) {
+    DeviceSizeService.instance.initialize(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Soda',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(centerTitle: true),
-        colorScheme: ColorScheme.fromSeed(seedColor: themePrimary),
+        // colorScheme: ColorScheme.fromSeed(seedColor: themePrimary),
       ),
       home: const HomePage(),
     );

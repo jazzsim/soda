@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soda/services/device_size.dart';
 import 'loading_view.dart';
 
 class LoadingScreen {
@@ -15,7 +16,7 @@ class LoadingScreen {
           return PopScope(
             canPop: false,
             child: Padding(
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.2),
+              padding: EdgeInsets.all(DeviceSizeService.device.width * 0.2),
               child: Consumer(
                 builder: (context, ref, child) {
                   return Dialog(
