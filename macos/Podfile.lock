@@ -15,7 +15,7 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - pdfrx (0.0.1):
+  - pdfrx (0.0.3):
     - Flutter
     - FlutterMacOS
   - screen_brightness_macos (0.1.0):
@@ -95,7 +95,7 @@ SPEC CHECKSUMS:
   media_kit_video: c75b07f14d59706c775778e4dd47dd027de8d1e5
   package_info_plus: fa739dd842b393193c5ca93c26798dff6e3d0e0c
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
-  pdfrx: 8c711fadb19f76c70e3326ceaa718fe4b6703c37
+  pdfrx: 07fc287c47ea8d027c4ed56457f8a1aa74d73594
   screen_brightness_macos: 2d6d3af2165592d9a55ffcd95b7550970e41ebda
   screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
   shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695

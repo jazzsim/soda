@@ -61,13 +61,13 @@ class _PDFViwerState extends ConsumerState<PDFViwer> {
                         color: Colors.black.withOpacity(0.5),
                       ),
                       child: Text(
-                        "Page ${controller.pageNumber} / ${controller.pages.length}",
+                        "Page ${controller.pageNumber} / ${controller.pageCount}",
                         style: const TextStyle(color: Colors.white),
                       ).px(15).py(5),
                     ).pb(15),
                   ),
               ],
-            ).pt(ref.read(titleBarHeight).toDouble() + 25),
+            ).pt(ref.read(titleBarHeight) + 25),
           ),
           Positioned(
             left: 0,
@@ -145,7 +145,7 @@ class _PDFViwerState extends ConsumerState<PDFViwer> {
             ),
           ),
         ],
-      ).pt(ref.read(titleBarHeight).toDouble()),
+      ).pt(ref.read(titleBarHeight)),
     );
   }
 }
