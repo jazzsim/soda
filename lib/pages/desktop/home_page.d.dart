@@ -19,7 +19,7 @@ final sidebarStateProvider = StateProvider<bool>((ref) => true);
 
 final contentVisibleStateProvider = StateProvider<bool>((ref) => true);
 
-final titleBarHeight = StateProvider<int>((ref) => 0);
+final titleBarHeight = StateProvider<double>((ref) => 0);
 
 class HomePageDekstop extends ConsumerStatefulWidget {
   const HomePageDekstop({super.key});

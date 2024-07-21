@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/modals/page_content.dart';
 import 'package:soda/widgets/components/documents/pdf_viewer.dart';
+import 'package:soda/widgets/components/documents/pdf_viewer.m.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 class DocumentThumbnail extends ConsumerStatefulWidget {
@@ -23,11 +26,14 @@ class _DocumentThumbnailState extends ConsumerState<DocumentThumbnail> {
       onTap: isPDFFile(widget.file.filename)
           ? () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => PDFViwer(
+                MaterialPageRoute(builder: (context) {
+                  if (Platform.isAndroid || Platform.isIOS) {
+                    return MobilePDFViwer(widget.file);
+                  }
+                  return PDFViwer(
                     widget.file,
-                  ),
-                ),
+                  );
+                }),
               );
             }
           : null,

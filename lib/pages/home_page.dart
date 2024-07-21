@@ -30,13 +30,17 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.initState();
     // skip if not desktop
 
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        int height = await windowManager.getTitleBarHeight();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        double height = (await windowManager.getTitleBarHeight()).toDouble();
         ref.read(titleBarHeight.notifier).update((state) => height);
         windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      });
-    }
+      } else {
+        // get phone status bar height
+        double height = MediaQuery.of(context).padding.top;
+        ref.read(titleBarHeight.notifier).update((state) => height);
+      }
+    });
   }
 
   @override

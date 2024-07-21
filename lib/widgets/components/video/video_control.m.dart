@@ -72,7 +72,7 @@ class _MobileVideoControlWidgetState extends ConsumerState<MobileVideoControlWid
               ),
             ),
             Positioned(
-              top: ref.read(titleBarHeight).toDouble() + 10,
+              top: ref.read(titleBarHeight).toDouble(),
               left: 10,
               child: AnimatedOpacity(
                 opacity: ref.watch(showVideoControlProvider) ? 1 : 0,
