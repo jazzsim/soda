@@ -249,69 +249,66 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      thumbVisibility: true,
-      child: ListView.builder(
-          itemCount: ref.read(playlistProvider).length,
-          itemBuilder: (BuildContext context, int index) {
-            Media media = ref.read(playlistProvider)[index];
-            bool playing = index == ref.read(playingVideoProvider);
-            return GestureDetector(
-              onDoubleTap: () async {
-                await widget.player.jump(index).then((_) {
-                  ref.read(playingVideoProvider.notifier).update((state) => index);
-                  setState(() {});
+    return ListView.builder(
+        itemCount: ref.read(playlistProvider).length,
+        itemBuilder: (BuildContext context, int index) {
+          Media media = ref.read(playlistProvider)[index];
+          bool playing = index == ref.read(playingVideoProvider);
+          return GestureDetector(
+            onDoubleTap: () async {
+              await widget.player.jump(index).then((_) {
+                ref.read(playingVideoProvider.notifier).update((state) => index);
+                setState(() {});
+              });
+            },
+            child: Listener(
+              onPointerDown: (_) {
+                setState(() {
+                  selectedIndex = index;
                 });
               },
-              child: Listener(
-                onPointerDown: (_) {
-                  setState(() {
-                    selectedIndex = index;
-                  });
-                },
-                child: Container(
-                  color: selectedIndex == index ? const Color.fromARGB(255, 55, 84, 237) : Colors.transparent,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Icon(
-                          Icons.arrow_right,
-                          size: 26,
-                          color: playing
-                              ? selectedIndex == index
-                                  ? Colors.white
-                                  : Colors.black
-                              : Colors.transparent,
-                        ),
-                        Expanded(
-                          child: ExtendedText(
-                            Uri.decodeComponent(media.uri),
-                            maxLines: 1,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  fontSize: 13,
-                                  color: selectedIndex == index ? Colors.white : Colors.black,
-                                ),
-                            overflowWidget: TextOverflowWidget(
-                              position: TextOverflowPosition.start,
-                              child: Text(
-                                "...",
-                                style: TextStyle(
-                                  color: selectedIndex == index ? Colors.white : Colors.black,
-                                ),
+              child: Container(
+                color: selectedIndex == index ? const Color.fromARGB(255, 55, 84, 237) : Colors.transparent,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Icon(
+                        Icons.arrow_right,
+                        size: 26,
+                        color: playing
+                            ? selectedIndex == index
+                                ? Colors.white
+                                : Colors.black
+                            : Colors.transparent,
+                      ),
+                      Expanded(
+                        child: ExtendedText(
+                          Uri.decodeComponent(media.uri),
+                          maxLines: 1,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 13,
+                                color: selectedIndex == index ? Colors.white : Colors.black,
+                              ),
+                          overflowWidget: TextOverflowWidget(
+                            position: TextOverflowPosition.start,
+                            child: Text(
+                              "...",
+                              style: TextStyle(
+                                color: selectedIndex == index ? Colors.white : Colors.black,
                               ),
                             ),
-                          ).pr(20),
-                        ),
-                      ],
-                    ),
+                          ),
+                        ).pr(20),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            );
-          }),
-    );
+            ),
+          );
+        });
   }
 }
 

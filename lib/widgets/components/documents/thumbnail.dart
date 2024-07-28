@@ -2,9 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdfrx/pdfrx.dart';
-import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/modals/page_content.dart';
+import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/components/documents/pdf_viewer.dart';
 import 'package:soda/widgets/components/documents/pdf_viewer.m.dart';
 import 'package:soda/widgets/extensions/padding.dart';
@@ -42,15 +41,13 @@ class _DocumentThumbnailState extends ConsumerState<DocumentThumbnail> {
           Expanded(
             child: Stack(
               children: [
-                isPDFFile(widget.file.filename)
-                    ? PdfViewerWidget(widget.file.filename)
-                    : const Center(
-                        child: Icon(
-                          Icons.description,
-                          color: Colors.teal,
-                          size: 60,
-                        ),
-                      ),
+                Center(
+                  child: Icon(
+                    Icons.description,
+                    color: Colors.teal,
+                    size: DeviceSizeService.device.size.height * 0.2,
+                  ),
+                ),
                 Container(
                   foregroundDecoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
@@ -99,42 +96,4 @@ bool isPDFFile(String filename) {
 
   // Check if the filename ends with ".pdf"
   return lowercaseFilename.endsWith('.pdf');
-}
-
-class PdfViewerWidget extends ConsumerStatefulWidget {
-  final String filename;
-  const PdfViewerWidget(this.filename, {super.key});
-
-  @override
-  ConsumerState<PdfViewerWidget> createState() => _PdfViewerWidgetState();
-}
-
-class _PdfViewerWidgetState extends ConsumerState<PdfViewerWidget> {
-  final controller = PdfViewerController();
-  bool zoomed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    // delay for zoom animation
-    controller.addListener(() async {
-      if (controller.isReady && !zoomed) {
-        controller.zoomUp();
-        zoomed = true;
-        await Future.delayed(const Duration(milliseconds: 500));
-        setState(() {});
-      }
-    });
-    return Opacity(
-      opacity: zoomed ? 1 : 0,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: PdfViewer.uri(
-          controller: controller,
-          Uri.parse(
-            ref.read(contentControllerProvider).getUrl(ref.read(baseURLStateProvider) + widget.filename),
-          ),
-        ),
-      ),
-    );
-  }
 }

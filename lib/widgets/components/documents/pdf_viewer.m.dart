@@ -1,9 +1,12 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/modals/page_content.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
+import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 class MobilePDFViwer extends ConsumerStatefulWidget {
@@ -20,16 +23,24 @@ class _MobilePDFViwerState extends ConsumerState<MobilePDFViwer> {
   int currentPage = 1;
 
   @override
-  Widget build(BuildContext context) {
-    controller.addListener(() async {
-      if (controller.isReady) {
-        if (controller.pageNumber != currentPage) {
-          currentPage = controller.pageNumber ?? 1;
-          setState(() {});
-        }
-      }
-    });
+  void initState() {
+    super.initState();
 
+    // onpostframe
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      controller.addListener(() async {
+        if (controller.isReady) {
+          if (controller.pageNumber != currentPage) {
+            currentPage = controller.pageNumber ?? 1;
+            setState(() {});
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.only(top: 20.0),

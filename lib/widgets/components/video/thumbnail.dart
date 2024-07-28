@@ -46,7 +46,7 @@ class VideoThumbnail extends StatelessWidget {
                               child: ExtendedImage.network(
                                 value,
                                 fit: BoxFit.cover,
-                                height: 200,
+                                // height: 200,
                                 cacheMaxAge: const Duration(days: 1),
                                 borderRadius: const BorderRadius.all(
                                   Radius.circular(

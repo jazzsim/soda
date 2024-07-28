@@ -7,6 +7,7 @@ void addServer(WidgetRef ref, BuildContext context, double screenWidth) {
     // showModalBottomSheet function
     addServerModal(ref, context);
   } else if (screenWidth > 640 && screenWidth < 1025) {
+    addServerModal(ref, context);
     // showModalBottomSheet / showDialog function
   } else {
     // showModalBottomSheet / showDialog function

@@ -21,22 +21,30 @@ class _PDFViwerState extends ConsumerState<PDFViwer> {
   bool ready = false;
 
   @override
-  Widget build(BuildContext context) {
-    controller.addListener(() async {
-      if (controller.isReady) {
-        if (!ready) {
-          ready = true;
-          controller.setZoom(controller.centerPosition, zoom);
-          await Future.delayed(const Duration(milliseconds: 500));
-          setState(() {});
-        }
-        if (controller.pageNumber != currentPage) {
-          currentPage = controller.pageNumber ?? 1;
-          setState(() {});
-        }
-      }
-    });
+  void initState() {
+    super.initState();
 
+    // onpostframe
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      controller.addListener(() async {
+        if (controller.isReady) {
+          if (!ready) {
+            ready = true;
+            controller.setZoom(controller.centerPosition, zoom);
+            await Future.delayed(const Duration(milliseconds: 500));
+            setState(() {});
+          }
+          if (controller.pageNumber != currentPage) {
+            currentPage = controller.pageNumber ?? 1;
+            setState(() {});
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
