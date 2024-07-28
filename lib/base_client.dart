@@ -17,7 +17,7 @@ class BaseClient {
       return jsonDecode(response.body);
     } else {
       // logger
-      throw CustomError('Unexpected Error');
+      throw Exception(response.body);
     }
   }
 
@@ -34,7 +34,7 @@ class BaseClient {
       return jsonDecode(response.body);
     } else {
       // logger
-      throw CustomError('Unexpected Error');
+      throw Exception(response.body);
     }
   }
 
@@ -51,7 +51,7 @@ class BaseClient {
       return response.body;
     } else {
       // logger
-      throw CustomError('Unexpected Error');
+      throw Exception(response.body);
     }
   }
 
@@ -66,7 +66,7 @@ class BaseClient {
       return response.body;
     } else {
       // logger
-      throw CustomError('Unexpected Error');
+      throw Exception(response.body);
     }
   }
 }

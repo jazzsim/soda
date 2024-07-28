@@ -97,7 +97,7 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                           (err, st) {
                             LoadingScreen(context).hide();
                             Navigator.of(context).pop();
-                            showToast(context, ToastType.error, err.toString());
+                            showToast(context, ToastType.error, "$err", extent: true);
                           },
                         );
                       },
