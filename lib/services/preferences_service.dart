@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum SPKeys {
  servers,
  gridFolder, 
+ videoThumbnail
 }
 
 class PreferencesService {
@@ -25,5 +26,13 @@ class PreferencesService {
 
   Future<void> setGridFolder(bool value) async {
     await _prefs.setBool(SPKeys.gridFolder.name, value);
+  }
+
+  bool getVideoThumbnail() {
+    return _prefs.getBool(SPKeys.videoThumbnail.name) ?? false;
+  }
+
+  Future<void> setVideoThumbnail(bool value) async {
+    await _prefs.setBool(SPKeys.videoThumbnail.name, value);
   }
 }

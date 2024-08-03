@@ -56,7 +56,47 @@ class HomePageMobile extends ConsumerWidget {
                   ),
                 ).px(5),
               ),
-        ]
+        ],
+        const ListTile(),
+        const Divider(),
+        ListTile(
+          leading: const Icon(
+            Icons.settings,
+          ),
+          title: Text(
+            'Settings',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                // get video thumbnail setting from shared preferences
+                bool videoThumbnailSetting = PreferencesService().getVideoThumbnail();
+
+                return AlertDialog(
+                  title: const Text('Settings'),
+                  content: ListTile(
+                    title: const Text('Video Thumbnail'),
+                    trailing: StatefulBuilder(
+                      builder: (context, setState) => Switch(
+                        value: videoThumbnailSetting,
+                        onChanged: (value) {
+                          PreferencesService().setVideoThumbnail(value);
+                          setState(() {
+                            videoThumbnailSetting = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ]),
       body: ref.watch(pageContentStateProvider).files.isEmpty && ref.watch(pageContentStateProvider).folders.isEmpty
           ? Center(

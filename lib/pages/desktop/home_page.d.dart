@@ -76,7 +76,49 @@ class _HomePageDekstopState extends ConsumerState<HomePageDekstop> with SingleTi
                             ),
                             onTap: () => selectServerFunc(ref, context, e.key),
                           ),
-                        )
+                        ),
+                    const Spacer(),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.settings,
+                      ),
+                      title: Text(
+                        'Settings',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            // get video thumbnail setting from shared preferences
+                            bool videoThumbnailSetting = PreferencesService().getVideoThumbnail();
+
+                            return AlertDialog(
+                              title: const Text('Settings'),
+                              content: SizedBox(
+                                width: DeviceSizeService.device.width * 0.2,
+                                child: ListTile(
+                                  title: const Text('Video Thumbnail'),
+                                  trailing: StatefulBuilder(
+                                    builder: (context, setState) => Switch(
+                                      value: videoThumbnailSetting,
+                                      onChanged: (value) {
+                                        PreferencesService().setVideoThumbnail(value);
+                                        setState(() {
+                                          videoThumbnailSetting = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
