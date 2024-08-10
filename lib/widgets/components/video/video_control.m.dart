@@ -44,7 +44,7 @@ class _MobileVideoControlWidgetState extends ConsumerState<MobileVideoControlWid
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      onPopInvoked: (_) {
+      onPopInvokedWithResult: (_, __) {
         ref.read(timerProvider)?.cancel();
       },
       child: FocusScope(

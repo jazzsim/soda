@@ -72,7 +72,7 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      onPopInvoked: (_) {
+      onPopInvokedWithResult: (_, __) {
         ref.read(timerProvider)?.cancel();
         ref.read(videoTimerProvider)?.cancel();
       },
