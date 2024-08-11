@@ -48,8 +48,10 @@ class FolderListTile extends ConsumerWidget {
           ref.watch(pathStateProvider.notifier).update((state) => '$state$folder');
         }
         ref.read(contentControllerProvider).getPageContent().then((value) {
+          if (!context.mounted) return;
           LoadingScreen(context).hide();
         }).catchError((err, st) {
+          if (!context.mounted) return;
           showToast(context, ToastType.error, err);
         });
       },

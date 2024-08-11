@@ -12,6 +12,10 @@ class Device {
     return width > height;
   }
 
+  bool isMobille() {
+    return width < 600;
+  }
+
   Device(this.width, this.height);
 }
 

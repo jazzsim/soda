@@ -1,12 +1,9 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/modals/page_content.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
-import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 class MobilePDFViwer extends ConsumerStatefulWidget {

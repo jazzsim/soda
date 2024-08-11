@@ -65,12 +65,12 @@ void selectServerFunc(WidgetRef ref, BuildContext context, int index) {
     ref.read(pathStateProvider.notifier).state = serverUri.path;
 
     ref.read(contentControllerProvider).getPageContent().then((_) {
+      if (!context.mounted) return;
       LoadingScreen(context).hide();
-      Navigator.of(context).pop();
     }).catchError((err, st) {
+      if (!context.mounted) return;
       LoadingScreen(context).hide();
-      Navigator.of(context).pop();
-      showToast(context, ToastType.error, err);
+      showToast(context, ToastType.error, err.toString());
     });
   }
 }
@@ -91,8 +91,10 @@ void selectFolderFunc(WidgetRef ref, BuildContext context, String folder) {
     ref.watch(pathStateProvider.notifier).update((state) => '$state$folder');
   }
   ref.read(contentControllerProvider).getPageContent().then((value) {
+    if (!context.mounted) return;
     LoadingScreen(context).hide();
   }).catchError((err, st) {
+    if (!context.mounted) return;
     showToast(context, ToastType.error, err);
   });
 }

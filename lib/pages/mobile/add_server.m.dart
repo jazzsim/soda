@@ -81,6 +81,7 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                         LoadingScreen(context).show();
                         ref.read(contentControllerProvider).getPageContent().then(
                           (_) async {
+                            if (!context.mounted) return;
                             showToast(context, ToastType.success, 'Success');
 
                             LoadingScreen(context).hide();
@@ -95,6 +96,7 @@ void addServerModal(WidgetRef ref, BuildContext context) {
                           },
                         ).catchError(
                           (err, st) {
+                            if (!context.mounted) return;
                             LoadingScreen(context).hide();
                             Navigator.of(context).pop();
                             showToast(context, ToastType.error, "$err", extent: true);

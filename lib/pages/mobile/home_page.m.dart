@@ -271,6 +271,7 @@ bool deleteServerDialog(WidgetRef ref, BuildContext context, int index) {
             TextButton(
               onPressed: () {
                 ref.read(contentControllerProvider).deleteServer(index).then((value) {
+                  if (!context.mounted) return;
                   showToast(context, ToastType.success, "Server removed", extent: true);
                 });
                 // Close the dialog
