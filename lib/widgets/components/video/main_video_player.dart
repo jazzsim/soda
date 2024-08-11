@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:extended_text/extended_text.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -263,7 +262,9 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
           itemCount: ref.read(playlistProvider).length,
           itemBuilder: (BuildContext context, int index) {
             Media media = ref.read(playlistProvider)[index];
+            String mediaName = media.uri.split("/").last;
             bool playing = index == ref.read(playingVideoProvider);
+
             return GestureDetector(
               onDoubleTap: () async {
                 await widget.player.jump(index).then((_) {
@@ -294,22 +295,13 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                               : Colors.transparent,
                         ),
                         Expanded(
-                          child: ExtendedText(
-                            Uri.decodeComponent(media.uri),
+                          child: Text(
+                            Uri.decodeComponent(mediaName),
                             maxLines: 1,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   fontSize: 13,
                                   color: selectedIndex == index ? Colors.white : Colors.black,
                                 ),
-                            overflowWidget: TextOverflowWidget(
-                              position: TextOverflowPosition.start,
-                              child: Text(
-                                "...",
-                                style: TextStyle(
-                                  color: selectedIndex == index ? Colors.white : Colors.black,
-                                ),
-                              ),
-                            ),
                           ).pr(20),
                         ),
                       ],
@@ -340,163 +332,173 @@ class _SettingTabState extends ConsumerState<SettingTab> {
     subtitles.isNotEmpty ? subtitles.clear() : null;
     subtitles.addAll(widget.player.state.tracks.subtitle);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 250,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Subtitles",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ).pltrb(15, 15, 0, 0),
-              Flexible(
-                child: StreamBuilder<Tracks>(
-                  stream: widget.player.stream.tracks,
-                  builder: (context, snapshot) => SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        ...(snapshot.data?.subtitle ?? subtitles).asMap().entries.map(
-                          (e) {
-                            late SubtitleTrack subtitleTrack;
-                            late bool loaded;
-                            if (snapshot.data?.subtitle == null) {
-                              subtitleTrack = subtitles[e.key];
-                              if (widget.player.state.track.subtitle.title == null) {
-                                loaded = e.value.id == widget.player.state.track.subtitle.id;
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 250,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Subtitles",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ).pltrb(15, 15, 0, 0),
+                Flexible(
+                  child: StreamBuilder<Tracks>(
+                    stream: widget.player.stream.tracks,
+                    builder: (context, snapshot) => SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          ...(snapshot.data?.subtitle ?? subtitles).asMap().entries.map(
+                            (e) {
+                              late SubtitleTrack subtitleTrack;
+                              late bool loaded;
+                              if (snapshot.data?.subtitle == null) {
+                                subtitleTrack = subtitles[e.key];
+                                if (widget.player.state.track.subtitle.title == null) {
+                                  loaded = e.value.id == widget.player.state.track.subtitle.id;
+                                } else {
+                                  loaded = e.value.title == widget.player.state.track.subtitle.title;
+                                }
                               } else {
+                                subtitleTrack = widget.player.state.tracks.subtitle[e.key];
                                 loaded = e.value.title == widget.player.state.track.subtitle.title;
                               }
-                            } else {
-                              subtitleTrack = widget.player.state.tracks.subtitle[e.key];
-                              loaded = e.value.title == widget.player.state.track.subtitle.title;
-                            }
 
-                            return GestureDetector(
-                              onDoubleTap: () async {
-                                await widget.player.setSubtitleTrack(e.value);
-                                setState(() {});
-                              },
-                              child: Listener(
-                                onPointerDown: (_) => setState(() {
-                                  selectedIndex = e.key;
-                                }),
-                                child: Container(
-                                  color: selectedIndex == e.key ? const Color.fromARGB(255, 55, 84, 237) : Colors.transparent,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 0.5),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Icon(
-                                          Icons.arrow_right,
-                                          size: 26,
-                                          color: loaded
-                                              ? selectedIndex == e.key
-                                                  ? Colors.white
-                                                  : Colors.black
-                                              : Colors.transparent,
-                                        ),
-                                        Expanded(
-                                          child: Text(
-                                            subtitleTrack.title ?? subtitleTrack.id,
-                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                  fontSize: 13,
-                                                  color: selectedIndex == e.key ? Colors.white : Colors.black,
-                                                ),
-                                          ).pr(15).py(3),
-                                        ),
-                                      ],
+                              return GestureDetector(
+                                onDoubleTap: () async {
+                                  await widget.player.setSubtitleTrack(e.value);
+                                  setState(() {});
+                                },
+                                child: Listener(
+                                  onPointerDown: (_) => setState(() {
+                                    selectedIndex = e.key;
+                                  }),
+                                  child: Container(
+                                    color: selectedIndex == e.key ? const Color.fromARGB(255, 55, 84, 237) : Colors.transparent,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 0.5),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Icon(
+                                            Icons.arrow_right,
+                                            size: 26,
+                                            color: loaded
+                                                ? selectedIndex == e.key
+                                                    ? Colors.white
+                                                    : Colors.black
+                                                : Colors.transparent,
+                                          ),
+                                          Expanded(
+                                            child: Text(
+                                              subtitleTrack.title ?? subtitleTrack.id,
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    fontSize: 13,
+                                                    color: selectedIndex == e.key ? Colors.white : Colors.black,
+                                                  ),
+                                            ).pr(15).py(3),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
+              ],
+            ),
+          ),
+          Text(
+            "External Subtitles",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).pltrb(15, 15, 0, 10),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 217, 217, 217),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
               ),
-            ],
-          ),
-        ),
-        Text(
-          "External Subtitles",
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ).pltrb(15, 15, 0, 10),
-        TextButton(
-          style: TextButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 217, 217, 217),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
             ),
-          ),
-          onPressed: () => showOverlay(context, widget.player),
-          child: Text(
-            "Browse from this server",
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ).btnRow(15),
-        const SizedBox(
-          height: 10,
-        ),
-        TextButton(
-          style: TextButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 217, 217, 217),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
+            onPressed: () => showOverlay(context, widget.player),
+            child: Text(
+              "Browse from this server",
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
+          ).btnRow(15),
+          const SizedBox(
+            height: 10,
           ),
-          onPressed: () async {
-            FilePickerResult? result = await FilePicker.platform.pickFiles(
-              type: FileType.custom,
-              allowedExtensions: ['srt', 'ass', 'sub', 'vtt', '.ssa'],
-            );
-
-            if (result != null) {
-              File file = File(result.files.single.path!);
-              await widget.player.setSubtitleTrack(
-                SubtitleTrack.data(
-                  file.readAsStringSync(),
-                  title: file.path.split('/').last,
-                ),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 217, 217, 217),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            onPressed: () async {
+              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['srt', 'ass', 'sub', 'vtt', '.ssa'],
               );
 
-              setState(() {});
-            }
-          },
-          child: Text(
-            "Browse from local file",
-            style: Theme.of(context).textTheme.bodyMedium,
+              if (result != null) {
+                File file = File(result.files.single.path!);
+                await widget.player.setSubtitleTrack(
+                  SubtitleTrack.data(
+                    file.readAsStringSync(),
+                    title: file.path.split('/').last,
+                  ),
+                );
+
+                setState(() {});
+              }
+            },
+            child: Text(
+              "Browse from local file",
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ).btnRow(15),
+          const SizedBox(
+            height: 20,
           ),
-        ).btnRow(15),
-        Text(
-          "Scale:",
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ).pltrb(15, 20, 0, 0),
-        Slider(
-          value: ref.watch(subtitleScaleStateProvider),
-          onChanged: (value) {
-            ref.read(subtitleScaleStateProvider.notifier).update((state) => value);
-          },
-        ),
-        Text(
-          "Position:",
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ).pltrb(15, 20, 0, 0),
-        Slider(
-          value: ref.watch(subtitlePositionStateProvider),
-          onChanged: (value) {
-            ref.read(subtitlePositionStateProvider.notifier).update((state) => value);
-          },
-        ),
-      ],
+          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+            Column(
+              children: [
+                Text(
+                  "Scale:",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ).pltrb(15, 20, 0, 0),
+                Slider(
+                  value: ref.watch(subtitleScaleStateProvider),
+                  onChanged: (value) {
+                    ref.read(subtitleScaleStateProvider.notifier).update((state) => value);
+                  },
+                ),
+                Text(
+                  "Position:",
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ).pltrb(15, 20, 0, 0),
+                Slider(
+                  value: ref.watch(subtitlePositionStateProvider),
+                  onChanged: (value) {
+                    ref.read(subtitlePositionStateProvider.notifier).update((state) => value);
+                  },
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
@@ -574,6 +576,7 @@ class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
                                       selectedIndex = -1;
                                       loadingOverlayEntry?.remove();
                                     }).catchError((err, st) {
+                                      if (!context.mounted) return;
                                       showToast(context, ToastType.error, err);
                                     });
                                   },
@@ -640,7 +643,7 @@ class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
                                       if (file.filename.contains(ext)) {
                                         loadingOverlayEntry = showLoadingOverlay(context);
                                         Overlay.of(context).insert(loadingOverlayEntry!);
-                                        await ref.read(contentControllerProvider).loadExternalSubs(widget.player, file);
+                                        await ref.read(contentControllerProvider).loadExternalSubs(widget.player, Uri.decodeComponent(file.filename));
                                         loadingOverlayEntry?.remove();
                                         widget.overlayEntry?.remove();
                                         return;

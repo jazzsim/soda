@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:soda/api/server_api.dart';
 import 'package:soda/modals/http_server.dart';
@@ -165,15 +166,9 @@ class ContentController {
 
   // video
   Future<String> vidThumbnail(String filename) async {
-    try {
-      String url = ref.read(baseURLStateProvider) + filename;
-      final res = await ServerApi().getThumbnail(getUrl(url), filename);
-      return res.thumbnail;
-    } catch (e) {
-      log("error $e");
-    }
-
-    return '';
+    String url = ref.read(baseURLStateProvider) + filename;
+    final res = await ServerApi().getThumbnail(getUrl(url), filename);
+    return res.thumbnail;
   }
 
   // pdf
@@ -182,8 +177,9 @@ class ContentController {
       String url = ref.read(baseURLStateProvider) + filename;
       final doc = PdfViewer.uri(Uri.parse(getUrl(url)));
       return doc.documentRef.sourceName;
-      // return res.thumbnail;
-    } catch (e) {}
+    } catch (e) {
+      // not valid pdf
+    }
     return "";
   }
 
@@ -215,7 +211,12 @@ class ContentController {
       for (var ext in subsExt) {
         if (otherFile.filename.contains(ext)) {
           if (compareWithoutExtension(filename, otherFile.filename)) {
-            loadExternalSubs(player, otherFile);
+            // readable filename
+            final readableFile = Uri.decodeComponent(otherFile.filename);
+            if (player.state.tracks.subtitle.where((e) => e.title == readableFile).isNotEmpty) {
+              return;
+            }
+            loadExternalSubs(player, readableFile);
             // load the first matched
             return;
           }
@@ -224,14 +225,17 @@ class ContentController {
     }
   }
 
-  Future<void> loadExternalSubs(Player player, FileElement otherFile) async {
-    File file = File('.cache/${otherFile.filename}');
+  Future<void> loadExternalSubs(Player player, String readableFile) async {
+    // Get the temporary directory
+    Directory tempDir = await getTemporaryDirectory();
+
+    File file = File('${tempDir.path}/$readableFile');
     final url = ref.read(httpServerStateProvider).url + ref.read(browsePathStateProvider);
 
     // check if cached
     if (await file.exists() == false) {
-      final response = await http.get(Uri.parse(getUrl(url) + otherFile.filename));
-      file = await cache(otherFile.filename);
+      final response = await http.get(Uri.parse(getUrl(url) + readableFile));
+      file = await cache(readableFile);
       await file.writeAsBytes(response.bodyBytes);
     }
 
@@ -239,7 +243,7 @@ class ContentController {
       await player.setSubtitleTrack(
         SubtitleTrack.data(
           file.readAsStringSync(),
-          title: Uri.decodeComponent(otherFile.filename),
+          title: readableFile,
         ),
       );
     } catch (e) {
@@ -249,7 +253,7 @@ class ContentController {
         await player.setSubtitleTrack(
           SubtitleTrack.data(
             content,
-            title: Uri.decodeComponent(otherFile.filename),
+            title: readableFile,
           ),
         );
       }
@@ -257,12 +261,10 @@ class ContentController {
   }
 
   Future<File> cache(String filename) async {
-    // Check if the directory exists, if not, create it
-    final cacheDir = Directory('.cache/');
-    if (!(await cacheDir.exists())) {
-      cacheDir.create();
-    }
-    return File('.cache/$filename');
+    // Get the temporary directory
+    Directory tempDir = await getTemporaryDirectory();
+
+    return File('${tempDir.path}/$filename');
   }
 
   String decodeFile(Uint8List fileBytes) {

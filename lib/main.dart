@@ -21,14 +21,6 @@ void main() async {
   await PreferencesService.initialize();
   MediaKit.ensureInitialized();
 
-  // clear subtitle cache
-  Directory cache = Directory(".cache/");
-  if (cache.existsSync()) {
-    for (var file in cache.listSync()) {
-      file.deleteSync();
-    }
-  }
-
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -49,7 +41,6 @@ class MyApp extends StatelessWidget {
       title: 'Soda',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(centerTitle: true),
-        // colorScheme: ColorScheme.fromSeed(seedColor: themePrimary),
       ),
       home: const HomePage(),
     );
