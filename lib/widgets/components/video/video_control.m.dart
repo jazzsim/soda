@@ -9,6 +9,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:soda/pages/desktop/home_page.d.dart';
 import 'package:soda/services/device_size.dart';
+import 'package:soda/widgets/components/video/main_video_player.dart';
 import 'package:soda/widgets/components/video/video_player.m.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
@@ -201,139 +202,143 @@ class _ControlsOverlay extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     double controlsOverlaySize = DeviceSizeService.device.width / 6;
 
-    return StreamBuilder<Duration>(
-      stream: player.stream.position,
-      builder: (context, snapshot) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 380),
-              width: controlsOverlaySize,
-              decoration: BoxDecoration(
+    return ref.watch(showVideoControlProvider) == false
+        ? Container()
+        : StreamBuilder<Duration>(
+            stream: player.stream.position,
+            builder: (context, snapshot) {
+              return ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                color: CupertinoColors.systemGrey6.withOpacity(0.6),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 3, 10, 0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      constraints: const BoxConstraints(minWidth: 380),
-                      width: controlsOverlaySize,
-                      height: 76,
-                      child: Stack(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 380),
+                    width: controlsOverlaySize,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: CupertinoColors.systemGrey6.withOpacity(0.6),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 3, 10, 0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Align(
-                            alignment: Alignment.topCenter,
-                            child: IconButton(
-                              onPressed: () {
-                                if (ref.read(showVideoControlProvider) == false) {
-                                  showControls(ref, callTimer: true);
-                                  return;
-                                }
-                                if (player.state.playing) {
-                                  showControls(ref);
-                                } else {
-                                  showControls(ref, callTimer: true);
-                                }
-                                player.state.playing ? player.pause() : player.play();
-                              },
-                              alignment: Alignment.center,
-                              iconSize: 42,
-                              padding: EdgeInsets.zero,
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                              icon: StreamBuilder<bool>(
-                                stream: player.stream.playing,
-                                builder: (context, snapshot) => Icon(
-                                  snapshot.data == true ? Icons.pause : Icons.play_arrow,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: IconButton(
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              onPressed: () {
-                                showDrawer(
-                                  context,
-                                  builder: (context) => MobileEndDrawerWidget(player: player),
-                                  onClose: () => showControls(
-                                    ref,
-                                  ),
-                                  config: const DrawerConfig(
-                                    widthPercentage: 0.75,
-                                    closeOnClickOutside: true,
-                                    backdropOpacity: 0.5,
-                                    borderRadius: 0,
-                                  ),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.playlist_play_rounded,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Container(
+                            constraints: const BoxConstraints(minWidth: 380),
+                            width: controlsOverlaySize,
+                            height: 76,
+                            child: Stack(
                               children: [
-                                SizedBox(
-                                  height: 43,
-                                  width: 55,
-                                  child: Center(
-                                    child: Text(
-                                      durationToStringWithoutMilliseconds(player.state.position),
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                            fontWeight: FontWeight.w400,
-                                          ),
+                                Align(
+                                  alignment: Alignment.topCenter,
+                                  child: IconButton(
+                                    onPressed: () {
+                                      if (ref.read(showVideoControlProvider) == false) {
+                                        showControls(ref, callTimer: true);
+                                        return;
+                                      }
+                                      if (player.state.playing) {
+                                        showControls(ref);
+                                      } else {
+                                        showControls(ref, callTimer: true);
+                                      }
+                                      player.state.playing ? player.pause() : player.play();
+                                    },
+                                    alignment: Alignment.center,
+                                    iconSize: 42,
+                                    padding: EdgeInsets.zero,
+                                    hoverColor: Colors.transparent,
+                                    highlightColor: Colors.transparent,
+                                    splashColor: Colors.transparent,
+                                    icon: StreamBuilder<bool>(
+                                        stream: player.stream.playing,
+                                        builder: (context, snapshot) {
+                                          return Icon(
+                                            player.state.playing == true ? Icons.pause : Icons.play_arrow,
+                                          );
+                                        }),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: IconButton(
+                                    hoverColor: Colors.transparent,
+                                    highlightColor: Colors.transparent,
+                                    onPressed: () {
+                                      showDrawer(
+                                        context,
+                                        builder: (context) => MobileEndDrawerWidget(player: player),
+                                        onClose: () => showControls(
+                                          ref,
+                                          callTimer: true,
+                                        ),
+                                        config: const DrawerConfig(
+                                          widthPercentage: 0.75,
+                                          closeOnClickOutside: true,
+                                          backdropOpacity: 0.5,
+                                          borderRadius: 0,
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.playlist_play_rounded,
+                                      size: 20,
                                     ),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () => ref.read(alterVideoDurationStateProvider.notifier).update((state) => !state),
-                                  child: SizedBox(
-                                    height: 43,
-                                    width: 55,
-                                    child: Center(
-                                      child: Text(
-                                        ref.watch(alterVideoDurationStateProvider)
-                                            ? "-${durationToStringWithoutMilliseconds(player.state.duration - player.state.position)}"
-                                            : durationToStringWithoutMilliseconds(player.state.duration),
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                              fontWeight: FontWeight.w400,
-                                            ),
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      SizedBox(
+                                        height: 43,
+                                        width: 55,
+                                        child: Center(
+                                          child: Text(
+                                            durationToStringWithoutMilliseconds(player.state.position),
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      GestureDetector(
+                                        onTap: () => ref.read(alterVideoDurationStateProvider.notifier).update((state) => !state),
+                                        child: SizedBox(
+                                          height: 43,
+                                          width: 55,
+                                          child: Center(
+                                            child: Text(
+                                              ref.watch(alterVideoDurationStateProvider)
+                                                  ? "-${durationToStringWithoutMilliseconds(player.state.duration - player.state.position)}"
+                                                  : durationToStringWithoutMilliseconds(player.state.duration),
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: ProgressBar(player: player),
                                 ),
                               ],
                             ),
                           ),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: ProgressBar(player: player),
-                          ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+              );
+            },
+          );
   }
 }
 
@@ -409,16 +414,6 @@ class _ProgressBarState extends ConsumerState<ProgressBar> {
                       onHover = false;
                       setState(() {});
                     }
-                  },
-                  onTapDown: (details) {
-                    if (ref.read(showVideoControlProvider) == false) {
-                      showControls(ref, callTimer: true);
-                      return;
-                    }
-                    position = details.localPosition.dx / constraints.maxWidth;
-                    timeStampsDouble = position * widget.player.state.duration.inSeconds;
-                    timeStamps = Duration(seconds: timeStampsDouble.toInt());
-                    widget.player.seek(timeStamps!);
                   },
                   child: Stack(
                     children: [

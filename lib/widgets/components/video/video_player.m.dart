@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:extended_text/extended_text.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +11,7 @@ import 'package:soda/controllers/content_controller.dart';
 import 'package:soda/pages/home_page.dart';
 import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/components/dialogs/loading_view.dart';
-import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
-import 'package:soda/widgets/components/primary_button.dart';
-import 'package:soda/widgets/components/secondary_button.dart';
+import 'package:soda/widgets/components/video/main_video_player.dart';
 import 'package:soda/widgets/components/video/video_control.m.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:soda/widgets/extensions/row.dart';
@@ -24,10 +21,6 @@ final onHoverDurationProvider = StateProvider<String?>((ref) => null);
 final playlistProvider = StateProvider<List<Media>>((ref) => []);
 
 final playingVideoProvider = StateProvider<int>((ref) => 0);
-
-final alterVideoDurationStateProvider = StateProvider<bool>((ref) => false);
-
-final browsePathStateProvider = StateProvider.autoDispose<String>((ref) => ref.read(pathStateProvider));
 
 class MobilleVideoPlayer extends ConsumerStatefulWidget {
   final String url;
@@ -133,44 +126,6 @@ class _MobilleVideoPlayerState extends ConsumerState<MobilleVideoPlayer> {
   }
 }
 
-class BufferingWidget extends StatelessWidget {
-  const BufferingWidget({
-    super.key,
-    required this.player,
-  });
-
-  final Player player;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: player.stream.buffering,
-      builder: (context, snapshot) {
-        if (snapshot.data == true) {
-          return GestureDetector(
-            onSecondaryTapDown: (event) => player.state.playing ? player.pause() : player.play(),
-            child: Container(
-              height: DeviceSizeService.device.size.height,
-              width: DeviceSizeService.device.size.width,
-              color: Colors.black26,
-              child: Center(
-                child: SizedBox(
-                  height: DeviceSizeService.device.size.height * 0.1,
-                  width: DeviceSizeService.device.size.height * 0.1,
-                  child: const CircularProgressIndicator(
-                    color: Colors.red,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-        return Container();
-      },
-    );
-  }
-}
-
 class MobileEndDrawerWidget extends ConsumerStatefulWidget {
   const MobileEndDrawerWidget({
     super.key,
@@ -253,6 +208,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
         itemCount: ref.read(playlistProvider).length,
         itemBuilder: (BuildContext context, int index) {
           Media media = ref.read(playlistProvider)[index];
+          String mediaName = media.uri.split('/').last;
           bool playing = index == ref.read(playingVideoProvider);
           return GestureDetector(
             onDoubleTap: () async {
@@ -284,22 +240,13 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                             : Colors.transparent,
                       ),
                       Expanded(
-                        child: ExtendedText(
-                          Uri.decodeComponent(media.uri),
+                        child: Text(
+                          Uri.decodeComponent(mediaName),
                           maxLines: 1,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 fontSize: 13,
                                 color: selectedIndex == index ? Colors.white : Colors.black,
                               ),
-                          overflowWidget: TextOverflowWidget(
-                            position: TextOverflowPosition.start,
-                            child: Text(
-                              "...",
-                              style: TextStyle(
-                                color: selectedIndex == index ? Colors.white : Colors.black,
-                              ),
-                            ),
-                          ),
                         ).pr(20),
                       ),
                     ],
@@ -312,15 +259,15 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
   }
 }
 
-class SettingTab extends ConsumerStatefulWidget {
+class SettingTab2 extends ConsumerStatefulWidget {
   final Player player;
-  const SettingTab(this.player, {super.key});
+  const SettingTab2(this.player, {super.key});
 
   @override
-  ConsumerState<SettingTab> createState() => _SettingTabState();
+  ConsumerState<SettingTab2> createState() => _SettingTab2State();
 }
 
-class _SettingTabState extends ConsumerState<SettingTab> {
+class _SettingTab2State extends ConsumerState<SettingTab2> {
   List<SubtitleTrack> subtitles = [];
   int? selectedIndex;
 
@@ -484,161 +431,6 @@ void showOverlay(BuildContext context, Player player) async {
   Overlay.of(context).insert(overlayEntry);
 }
 
-class BrowseFileOverlay extends ConsumerStatefulWidget {
-  final OverlayEntry? overlayEntry;
-  final Widget backdrop;
-  final Player player;
-  const BrowseFileOverlay({required this.overlayEntry, required this.backdrop, required this.player, super.key});
-
-  @override
-  ConsumerState<BrowseFileOverlay> createState() => _BrowseFileOverlayState();
-}
-
-class _BrowseFileOverlayState extends ConsumerState<BrowseFileOverlay> {
-  int selectedIndex = -1;
-  OverlayEntry? loadingOverlayEntry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.backdrop,
-        Align(
-          alignment: Alignment.center,
-          child: Material(
-            color: Colors.transparent,
-            child: SizedBox(
-              width: DeviceSizeService.device.size.width * 0.8,
-              height: DeviceSizeService.device.size.height * 0.8,
-              child: Card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Browse subtitle from server',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ).pa(20),
-                    Text(
-                      "Path: ${Uri.decodeComponent(ref.watch(browsePathStateProvider))}",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-                    ).px(20),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            ...ref.watch(pageContentStateProvider).folders.map(
-                              (folder) {
-                                return ListTile(
-                                  onTap: () {
-                                    loadingOverlayEntry = showLoadingOverlay(context);
-                                    Overlay.of(context).insert(loadingOverlayEntry!);
-                                    if (folder == '../') {
-                                      Uri uri = ref.read(contentControllerProvider).handleReverse(browse: true);
-                                      ref.read(httpServerStateProvider.notifier).update((state) => state.copyWith(url: uri.origin));
-                                      ref.read(browsePathStateProvider.notifier).update((state) => "${uri.path}/");
-                                    } else {
-                                      ref.watch(browsePathStateProvider.notifier).update((state) => '$state$folder');
-                                    }
-                                    ref.read(contentControllerProvider).getPageContent(browse: true).then((value) {
-                                      selectedIndex = -1;
-                                      loadingOverlayEntry?.remove();
-                                    }).catchError((err, st) {
-                                      showToast(context, ToastType.error, err);
-                                    });
-                                  },
-                                  title: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.folder,
-                                        color: Color.fromARGB(255, 117, 117, 117),
-                                      ).pltrb(10, 0, 5, 0),
-                                      Expanded(
-                                        child: Text(
-                                          Uri.decodeComponent(folder),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ).px(5),
-                                      ),
-                                    ],
-                                  ).py(8),
-                                );
-                              },
-                            ),
-                            ...ref.watch(othersContentStateProvider).asMap().entries.map(
-                              (file) {
-                                return ListTile(
-                                  onTap: () async => setState(() {
-                                    selectedIndex = file.key;
-                                  }),
-                                  splashColor: Colors.transparent,
-                                  selectedTileColor: const Color.fromARGB(255, 58, 124, 238),
-                                  selectedColor: Colors.white,
-                                  leading: Icon(
-                                    Icons.description,
-                                    color: selectedIndex == file.key ? Colors.white : const Color.fromARGB(255, 117, 117, 117),
-                                  ).pltrb(10, 0, 5, 0),
-                                  selected: selectedIndex == file.key,
-                                  title: Text(Uri.decodeComponent(file.value.filename)),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ).pt(20),
-                    ),
-                    Card(
-                      margin: EdgeInsets.zero,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(15),
-                          bottomRight: Radius.circular(15),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          WebPrimaryButton(
-                            "Load",
-                            onPressed: selectedIndex == -1
-                                ? null
-                                : () async {
-                                    List<String> subsExt = ['srt', 'ass', 'sub', 'vtt', 'ssa'];
-                                    final file = ref.read(othersContentStateProvider)[selectedIndex];
-                                    for (var ext in subsExt) {
-                                      if (file.filename.contains(ext)) {
-                                        loadingOverlayEntry = showLoadingOverlay(context);
-                                        Overlay.of(context).insert(loadingOverlayEntry!);
-                                        await ref.read(contentControllerProvider).loadExternalSubs(widget.player, file);
-                                        loadingOverlayEntry?.remove();
-                                        widget.overlayEntry?.remove();
-                                        return;
-                                      }
-                                    }
-                                    showToast(context, ToastType.error, 'File not supported', extent: true);
-                                  },
-                          ),
-                          const SizedBox(
-                            width: 10,
-                          ),
-                          WebSecondaryButton(
-                            "Cancel",
-                            onPressed: () => widget.overlayEntry?.remove(),
-                          )
-                        ],
-                      ).pa(15),
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 OverlayEntry showLoadingOverlay(BuildContext context) {
   return OverlayEntry(
     builder: (context) {
@@ -662,35 +454,4 @@ OverlayEntry showLoadingOverlay(BuildContext context) {
       );
     },
   );
-}
-
-String durationToStringWithoutMilliseconds(Duration duration) {
-  String twoDigits(int n) => n.toString().padLeft(2, '0');
-
-  String hours = twoDigits(duration.inHours);
-  String minutes = twoDigits(duration.inMinutes.remainder(60));
-  String seconds = twoDigits(duration.inSeconds.remainder(60));
-
-  if (hours == '00') {
-    return '$minutes:$seconds';
-  }
-  return '$hours:$minutes:$seconds';
-}
-
-(List<Media>, int) getPlaylist(WidgetRef ref, String url) {
-  String playlistPrefix = ref.read(baseURLStateProvider);
-  List<Media> playlist = [];
-  int index = 0;
-  for (var i = 0; i < ref.read(videosContentStateProvider).length; i++) {
-    final videoInPlaylistUrl = ref.read(videosContentStateProvider)[i].filename;
-    if (url == videoInPlaylistUrl) {
-      index = i;
-    }
-    playlist.add(
-      Media(
-        ref.read(contentControllerProvider).getUrl(playlistPrefix + videoInPlaylistUrl),
-      ),
-    );
-  }
-  return (playlist, index);
 }
