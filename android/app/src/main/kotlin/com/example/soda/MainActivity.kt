@@ -1,4 +1,4 @@
-package com.example.soda
+package com.jazzsim.soda
 
 import io.flutter.embedding.android.FlutterActivity
 
