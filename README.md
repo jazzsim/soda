@@ -1,14 +1,38 @@
 # Soda
-This project allows you to browse from HTML server/open directory without downloading them. A Go WebServer is **required** to run this application. *refer [Soda-Go](https://github.com/jazzsim/soda-go)*
 
-Update June 2024: 
-Video player development is considered done, with some UX enhancement left. Next up, will be the image and pdf viewing functions. Follow up with download from the server function. After enhancing the application UI/UX, there will be a release version.
+<p align="center">
+    <img src="assets/soda_logo.png" alt="Soda Logo" width=180px>
+</p>
 
-<img src="https://github.com/jazzsim/soda/assets/24294128/c4f132dd-e291-4852-ac7f-22102d081a26" width="400">
-<img src="https://github.com/jazzsim/soda/assets/24294128/d7c3557b-47db-4df2-b68c-56cd5ecd1649" width="400">
-<img src="https://github.com/jazzsim/soda/assets/24294128/0c5f7e2e-8314-4c09-8af7-ad8ec8529951" width="400">
-<img src="https://github.com/jazzsim/soda/assets/24294128/c2df60e6-bb1c-4b6e-9dc3-4579840718f4" width="400">
+<br>
 
+Browse HTML server/open directory without downloading them. 
+<br>
+
+## Prerequisite
+A separate Go WebServer is **required** to run this application. 
+<br>
+***Refer [Soda-Go](https://github.com/jazzsim/soda-go) or [Soda-Server](https://github.com/jazzsim/soda-server) for thumbnail support**
+
+## Build
+1. Clone the project
+2. Navigate to project
+3. Run `./scripts/build.sh`
+4. Run `open .`
+5. Install the `.apk` or .`dmg` to your device
+
+## Screenshots
+![home](https://github.com/user-attachments/assets/1d75a10b-138d-49c9-a61d-e07de81e1053)
+![add-server](https://github.com/user-attachments/assets/d6eeedae-6de5-4648-82db-9aea71ad7e9e)
+![folder-grid-view](https://github.com/user-attachments/assets/7a11176f-eb53-445b-8796-649c1b2d7f49)
+![folder-list-view](https://github.com/user-attachments/assets/88889dd3-f5ef-4b8d-946b-d413cf7a632d)
+
+## PDF Viewer
+<img width="800" alt="album" src="https://github.com/user-attachments/assets/57ecd384-fbb9-4e91-afec-3b8db4f1325d">
+
+## Image Viewer
+<img width="400" alt="album" src="https://github.com/user-attachments/assets/713fbc49-d05d-472f-a164-02070e7eacdc">
+<img width="400" alt="image-view" src="https://github.com/user-attachments/assets/4bda3c5a-9e27-479f-9d4b-75383108490a">
 
 ## Video Player
 
