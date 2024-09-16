@@ -34,6 +34,10 @@ final endDrawerWidthProvider = StateProvider<bool>((ref) => false);
 
 final endDrawerVisibilityProvider = StateProvider<bool>((ref) => false);
 
+final screenshotStateProvider = StateProvider.autoDispose<Uint8List?>((ref) => null);
+
+final playbackRateStateProvider = StateProvider.autoDispose<double?>((ref) => null);
+
 class VideoControlWidget extends ConsumerStatefulWidget {
   final Player player;
   final VideoState state;
@@ -56,8 +60,6 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
     } on PlatformException {
       cursorInWindow = null;
     }
-
-    // setState(() {});
   }
 
   @override
@@ -78,7 +80,7 @@ class _VideoControlWidgetState extends ConsumerState<VideoControlWidget> {
       },
       child: CallbackShortcuts(
         bindings: getShortcuts(widget.state, context, ref, widget.player),
-        child: FocusScope(
+        child: Focus(
           autofocus: true,
           onFocusChange: (value) async {
             // trigger to hide controls when video enter&exit fullscreen
@@ -490,18 +492,43 @@ Map<ShortcutActivator, VoidCallback> getShortcuts(VideoState state, BuildContext
       await player.next();
       ref.read(playingVideoProvider.notifier).update((state) => state += 1);
     },
-    LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS): () async {
-      final Uint8List? screenshot = await player.screenshot();
-
-      String formatDate() => DateFormat('yyyy-MM-dd_HHmmss').format(DateTime.now());
-
-      FileSaver.instance.saveFile(
-        name: 'screenshot_${formatDate()}.png',
-        bytes: screenshot,
-        mimeType: MimeType.png,
-      );
-    }
+    // mac
+    const SingleActivator(meta: true, LogicalKeyboardKey.keyS): () async => screenshot(player, ref),
+    const SingleActivator(meta: true, LogicalKeyboardKey.bracketRight): () async => speedup(player, ref),
+    const SingleActivator(meta: true, LogicalKeyboardKey.bracketLeft): () async => slowdown(player, ref),
+    // windows
+    const SingleActivator(control: true, LogicalKeyboardKey.keyS): () async => screenshot(player, ref),
+    const SingleActivator(control: true, LogicalKeyboardKey.bracketRight): () async => speedup(player, ref),
+    const SingleActivator(control: true, LogicalKeyboardKey.bracketLeft): () async => slowdown(player, ref),
   };
+}
+
+void screenshot(Player player, WidgetRef ref) async {
+  final Uint8List? screenshot = await player.screenshot();
+
+  String formatDate() => DateFormat('yyyy-MM-dd_HHmmss').format(DateTime.now());
+
+  FileSaver.instance.saveFile(
+    name: 'screenshot_${formatDate()}.png',
+    bytes: screenshot,
+    mimeType: MimeType.png,
+  );
+
+  ref.read(screenshotStateProvider.notifier).update((state) => screenshot);
+}
+
+void speedup(Player player, WidgetRef ref) async {
+  double currentRate = player.state.rate;
+  if (currentRate == 2.0) return;
+  await player.setRate(currentRate += 0.5);
+  ref.read(playbackRateStateProvider.notifier).update((state) => currentRate);
+}
+
+void slowdown(Player player, WidgetRef ref) async {
+  double currentRate = player.state.rate;
+  if (currentRate == 0.5) return;
+  await player.setRate(currentRate -= 0.5);
+  ref.read(playbackRateStateProvider.notifier).update((state) => currentRate);
 }
 
 void showControls(WidgetRef ref, {bool callTimer = false}) {

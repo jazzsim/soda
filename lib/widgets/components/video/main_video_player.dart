@@ -11,6 +11,7 @@ import 'package:soda/pages/home_page.dart';
 import 'package:soda/services/device_size.dart';
 import 'package:soda/widgets/components/dialogs/loading_view.dart';
 import 'package:soda/widgets/components/dialogs/toast_overlay.dart';
+import 'package:soda/widgets/components/others/fade_animation.dart';
 import 'package:soda/widgets/components/primary_button.dart';
 import 'package:soda/widgets/components/secondary_button.dart';
 import 'package:soda/widgets/components/video/video_control.dart';
@@ -103,6 +104,8 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
                         return Stack(
                           children: [
                             BufferingWidget(player: player),
+                            const ScreenshotPreviewWidget(),
+                            SpeedWidget(player: player),
                             VideoControlWidget(
                               player: player,
                               state: state,
@@ -156,6 +159,69 @@ class BufferingWidget extends StatelessWidget {
         }
         return Container();
       },
+    );
+  }
+}
+
+class ScreenshotPreviewWidget extends ConsumerWidget {
+  const ScreenshotPreviewWidget({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(screenshotStateProvider) == null) {
+      return Container();
+    }
+    return Positioned(
+      bottom: 20,
+      left: 20,
+      child: FadeTransitionWidget(
+        fadeDuration: const Duration(milliseconds: 100),
+        onFade: () => ref.read(screenshotStateProvider.notifier).update((state) => null),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(9),
+          child: Image.memory(
+            ref.read(screenshotStateProvider.notifier).state!,
+            height: 200,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SpeedWidget extends ConsumerWidget {
+  final Player player;
+  const SpeedWidget({required this.player, super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(playbackRateStateProvider) == null) {
+      return Container();
+    }
+    return Positioned(
+      top: 50,
+      right: 30,
+      child: FadeTransitionWidget(
+        fadeDuration: const Duration(milliseconds: 200),
+        onFade: () => ref.watch(playbackRateStateProvider.notifier).update((state) => null),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.30),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 18.0),
+            child: Text(
+              "${player.state.rate}x",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
