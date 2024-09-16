@@ -5,6 +5,7 @@ import 'package:soda/services/device_size.dart';
 import 'package:soda/services/preferences_service.dart';
 import 'package:soda/widgets/components/contents/grid_folders.dart';
 import 'package:soda/widgets/components/documents/thumbnail.dart';
+import 'package:soda/widgets/components/secondary_button.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 
 import '../../controllers/content_controller.dart';
@@ -98,20 +99,35 @@ class _HomePageDekstopState extends ConsumerState<HomePageDekstop> with SingleTi
                             return AlertDialog(
                               title: const Text('Settings'),
                               content: SizedBox(
-                                width: DeviceSizeService.device.width * 0.2,
-                                child: ListTile(
-                                  title: const Text('Video Thumbnail'),
-                                  trailing: StatefulBuilder(
-                                    builder: (context, setState) => Switch(
-                                      value: videoThumbnailSetting,
-                                      onChanged: (value) {
-                                        PreferencesService().setVideoThumbnail(value);
-                                        setState(() {
-                                          videoThumbnailSetting = value;
-                                        });
-                                      },
+                                width: DeviceSizeService.device.width * 0.24,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ListTile(
+                                      title: const Text('Video Thumbnail'),
+                                      trailing: StatefulBuilder(
+                                        builder: (context, setState) => Switch(
+                                          value: videoThumbnailSetting,
+                                          onChanged: (value) {
+                                            PreferencesService().setVideoThumbnail(value);
+                                            setState(() {
+                                              videoThumbnailSetting = value;
+                                            });
+                                          },
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    ListTile(
+                                      title: const Text('Clear Servers List'),
+                                      trailing: StatefulBuilder(
+                                        builder: (context, setState) => SecondaryButton('Clear', onPressed: () {
+                                          PreferencesService().clear();
+                                          ref.read(serverListStateProvider.notifier).state = [];
+                                          setState(() {});
+                                        }),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
