@@ -17,6 +17,7 @@ import 'package:soda/widgets/components/secondary_button.dart';
 import 'package:soda/widgets/components/video/video_control.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:soda/widgets/extensions/row.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 final offSetStateProvider = StateProvider<double>((ref) => 0);
 
@@ -51,6 +52,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
 
     WidgetsBinding.instance.addPostFrameCallback(
       (_) async {
+        WakelockPlus.enable();
         if (player.platform is NativePlayer) {
           await (player.platform as dynamic).setProperty(
             'force-seekable',
@@ -76,6 +78,7 @@ class _MainVideoPlayerState extends ConsumerState<MainVideoPlayer> {
   void dispose() {
     player.stop();
     player.dispose();
+    WakelockPlus.disable();
     super.dispose();
   }
 

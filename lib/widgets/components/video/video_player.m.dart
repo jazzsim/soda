@@ -15,6 +15,7 @@ import 'package:soda/widgets/components/video/main_video_player.dart';
 import 'package:soda/widgets/components/video/video_control.m.dart';
 import 'package:soda/widgets/extensions/padding.dart';
 import 'package:soda/widgets/extensions/row.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 final onHoverDurationProvider = StateProvider<String?>((ref) => null);
 
@@ -40,6 +41,7 @@ class _MobilleVideoPlayerState extends ConsumerState<MobilleVideoPlayer> {
 
     WidgetsBinding.instance.addPostFrameCallback(
       (_) async {
+        WakelockPlus.enable();
         if (player.platform is NativePlayer) {
           await (player.platform as dynamic).setProperty(
             'force-seekable',
@@ -65,6 +67,7 @@ class _MobilleVideoPlayerState extends ConsumerState<MobilleVideoPlayer> {
   void dispose() {
     player.stop();
     player.dispose();
+    WakelockPlus.disable();
     super.dispose();
   }
 
