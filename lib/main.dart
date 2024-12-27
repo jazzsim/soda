@@ -7,6 +7,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:soda/pages/home_page.dart';
 import 'package:soda/services/device_size.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'services/preferences_service.dart';
 
@@ -19,6 +20,14 @@ void main() async {
   }
 
   await PreferencesService.initialize();
+
+  PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+  // Set version
+  String version = packageInfo.version;
+  String code = packageInfo.buildNumber;
+  PreferencesService().setVersion("v$version ($code)");
+
   MediaKit.ensureInitialized();
 
   runApp(

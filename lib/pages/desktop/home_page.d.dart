@@ -79,6 +79,10 @@ class _HomePageDekstopState extends ConsumerState<HomePageDekstop> with SingleTi
                           ),
                         ),
                     const Spacer(),
+                    Text(
+                      "Version: ${PreferencesService().getVersion()}",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w300),
+                    ),
                     ListTile(
                       leading: const Icon(
                         Icons.settings,

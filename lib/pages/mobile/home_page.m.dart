@@ -58,6 +58,12 @@ class HomePageMobile extends ConsumerWidget {
               ),
         ],
         const ListTile(),
+        Center(
+          child: Text(
+            "Version: ${PreferencesService().getVersion()}",
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w300),
+          ),
+        ),
         const Divider(),
         ListTile(
           leading: const Icon(
